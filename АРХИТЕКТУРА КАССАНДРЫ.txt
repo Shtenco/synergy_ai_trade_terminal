@@ -326,3 +326,29 @@ TradingView
 
 Скажи одно слово:
 MVP / DIAGRAM / MOEX / TЗ
+──────────────────────────────────────────────────────────────────────────────
+PYTHON IMPLEMENTATION BLUEPRINT (актуализировано под текущий репозиторий)
+──────────────────────────────────────────────────────────────────────────────
+1) Supervisor Layer (MAIN.py)
+   - Загружает config.json
+   - Поднимает DataCollector и TradeTester в отдельных процессах
+   - Контролирует health-check (is_alive)
+   - Автоматически перезапускает упавший процесс
+   - Выполняет graceful shutdown по SIGINT/SIGTERM
+
+2) Market Intelligence Layer (cassandra_ai_collector.py)
+   - Сбор tick/cluster/orderbook/closed positions
+   - Генерация micro-features и labels
+   - Экспорт CSV / Parquet / NPZ / JSONL
+
+3) Execution + Control API Layer (cassandra_v6_FIXED.py)
+   - Реальное размещение ордеров
+   - TP/SL lifecycle
+   - Web API + SocketIO dashboard updates
+
+4) Integration Contract
+   - Collector отвечает за данные/фичи
+   - Tester отвечает за execution и risk lifecycle
+   - MAIN.py отвечает за orchestration и fault tolerance
+
+Ключевой принцип: строгая декомпозиция ответственности + отказоустойчивый supervisor.
