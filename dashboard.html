@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CASSANDRA · HERMES v11 | SCALPER PRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@7.0.5/dist/browser/signalr.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+<style>
+/* ═══════════════════════════ RESET / VARS ═══════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg0:#0D1117;--bg1:#10151C;--bg2:#161B24;--bg3:#1C222D;--bg4:#222A37;
+  --bdr:#252D3D;--bdr2:#2E3850;
+  --G:#3D8EFF;--Gd:#1A5FCC;--Gg:rgba(61,142,255,.10);
+  --R:#E05050;--Rd:#5C1919;--Rg:rgba(224,80,80,.10);
+  --Y:#D4A030;--C:#30C0D0;--B:#6090CC;
+  --T:#DDE6F5;--Tm:#6070A0;--Td:#303A50;
+  --F:'Inter',sans-serif;--FM:'Roboto Mono',monospace;
+}
+[data-theme="light"]{
+  --bg0:#F2F5FA;--bg1:#E8EDF7;--bg2:#DDE4F2;--bg3:#D2DCEE;--bg4:#C8D4EA;
+  --bdr:#B8C8E0;--bdr2:#9AB0D0;
+  --G:#1A5FCC;--Gd:#0D3D8A;--Gg:rgba(26,95,204,.09);
+  --R:#CC2A2A;--Rd:#8A0D0D;--Rg:rgba(204,42,42,.09);
+  --Y:#9A6600;--C:#0A7A9A;--B:#2A6AAA;
+  --T:#0D1830;--Tm:#4A6080;--Td:#8AAACB;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--T);font-family:var(--F);font-size:11px;line-height:1.4;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:var(--bg1);}
+::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px;}
+[data-theme="dark"] body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);}
+
+/* ═══════════════════════════ LAYOUT ═════════════════════════════════*/
+.shell{display:grid;grid-template-rows:30px 1fr 130px;height:100vh;overflow:hidden;}
+.body{display:grid;grid-template-columns:200px 1fr 268px 192px;overflow:hidden;height:100%;}
+
+/* ═══════════════════════════ TOPBAR ════════════════════════════════ */
+.tb{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--bdr);overflow:hidden;gap:0;}
+.tb-logo{font-size:10px;font-weight:700;color:var(--G);letter-spacing:2.5px;padding:0 10px;border-right:1px solid var(--bdr);white-space:nowrap;font-family:var(--FM);}
+.tc{display:flex;align-items:center;gap:4px;padding:0 8px;border-right:1px solid var(--bdr);height:30px;white-space:nowrap;flex-shrink:0;}
+.tl{font-size:7.5px;color:var(--Tm);letter-spacing:.8px;text-transform:uppercase;}
+.tv{font-size:10.5px;font-weight:600;font-family:var(--FM);}
+.tv.g{color:var(--G);}.tv.r{color:var(--R);}.tv.y{color:var(--Y);}
+.tb-r{margin-left:auto;display:flex;align-items:center;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--Td);flex-shrink:0;transition:background .3s;}
+.dot.on{background:var(--G);box-shadow:0 0 5px var(--G);}
+.dot.pulse{background:var(--G);animation:blink 1s infinite;box-shadow:0 0 5px var(--G);}
+.dot.err{background:var(--R);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.15;}}
+.lb{background:transparent;border:none;color:var(--Tm);font-family:var(--FM);font-size:9.5px;font-weight:700;
+  padding:0 8px;height:30px;cursor:pointer;letter-spacing:.8px;border-left:1px solid var(--bdr);}
+.lb.active,.lb:hover{color:var(--G);background:var(--Gg);}
+
+/* ═══════════════════════════ PANEL ══════════════════════════════════*/
+.col{border-right:1px solid var(--bdr);overflow:hidden;display:flex;flex-direction:column;}
+.ph{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg2);
+  border-bottom:1px solid var(--bdr);font-size:7.5px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--Tm);flex-shrink:0;}
+.ph-n{background:var(--G);color:var(--bg0);padding:1px 4px;font-size:6.5px;font-weight:700;}
+.sec{padding:6px 7px;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.sec-t{font-size:7.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--G);margin-bottom:5px;}
+.sc{overflow-y:auto;flex:1;}
+
+/* ═══════════════════════════ FORMS ══════════════════════════════════*/
+.f{margin-bottom:5px;}
+.f label{display:block;font-size:7.5px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--Tm);margin-bottom:2px;}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--T);
+  font-family:var(--FM);font-size:10.5px;padding:3px 6px;outline:none;transition:border-color .1s;}
+.fi:focus{border-color:var(--G);background:var(--bg4);}
+.fi::placeholder{color:var(--Td);}
+.fi option{background:var(--bg2);}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;}
+
+/* ═══════════════════════════ BUTTONS ════════════════════════════════*/
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:3px;
+  font-family:var(--FM);font-size:9.5px;font-weight:700;letter-spacing:.6px;
+  padding:4px 8px;border:1px solid;cursor:pointer;transition:all .08s;
+  text-transform:uppercase;white-space:nowrap;}
+.btn:disabled{opacity:.28;cursor:not-allowed;}
+.btn:active:not(:disabled){transform:scale(.97);}
+.bg{background:var(--Gg);border-color:var(--G);color:var(--G);}
+.bg:hover:not(:disabled){background:rgba(61,142,255,.18);box-shadow:0 0 10px rgba(61,142,255,.2);}
+.br{background:var(--Rg);border-color:var(--R);color:var(--R);}
+.br:hover:not(:disabled){background:rgba(224,80,80,.2);}
+.by{background:rgba(212,160,48,.08);border-color:var(--Y);color:var(--Y);}
+.by:hover:not(:disabled){background:rgba(212,160,48,.18);}
+.bx{background:transparent;border-color:var(--bdr2);color:var(--Tm);}
+.bx:hover:not(:disabled){border-color:var(--Tm);color:var(--T);}
+.bw{width:100%;}
+
+/* ═══════════════════════════ ORDER SIDE ═════════════════════════════*/
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:6px;}
+.side{padding:8px 4px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid;transition:all .1s;font-family:var(--FM);letter-spacing:.3px;}
+.buy-s{border-color:var(--Gd);color:var(--Tm);}
+.buy-s.act,.buy-s:hover{background:rgba(61,142,255,.15);color:var(--G);border-color:var(--G);}
+.sel-s{border-color:var(--Rd);color:var(--Tm);}
+.sel-s.act,.sel-s:hover{background:var(--Rg);color:var(--R);border-color:var(--R);}
+
+/* Quick vol buttons */
+.qvol{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:6px;}
+.qvb{padding:3px 2px;text-align:center;font-size:9px;font-weight:700;color:var(--Tm);
+  cursor:pointer;border:1px solid var(--bdr);background:transparent;font-family:var(--FM);transition:all .08s;}
+.qvb:hover{color:var(--T);border-color:var(--bdr2);}
+.qvb.act{color:var(--G);border-color:var(--G);background:var(--Gg);}
+
+/* ═══════════════════════════ ORDER TABS ════════════════════════════*/
+.ot{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--bdr);margin-bottom:5px;}
+.ot-t{padding:3px 2px;text-align:center;font-size:8.5px;font-weight:700;color:var(--Tm);
+  cursor:pointer;border-right:1px solid var(--bdr);transition:all .1s;}
+.ot-t:last-child{border-right:none;}
+.ot-t.act{color:var(--G);background:var(--Gg);}
+.ot-t:hover:not(.act){color:var(--T);background:var(--bg3);}
+.ot-tip{font-size:6.5px;display:block;color:var(--Td);margin-top:1px;}
+
+/* TP/SL MODE */
+.mrow{display:flex;gap:2px;margin-bottom:3px;}
+.mb{flex:1;padding:2px;text-align:center;font-size:7.5px;font-weight:700;color:var(--Tm);
+  cursor:pointer;border:1px solid var(--bdr);transition:all .08s;}
+.mb.act{color:var(--G);border-color:var(--G);background:var(--Gg);}
+.slb{background:var(--bg3);border:1px solid var(--bdr);padding:5px 6px;margin-bottom:4px;}
+.slbl{font-size:7.5px;font-weight:700;letter-spacing:.4px;margin-bottom:3px;display:flex;align-items:center;gap:4px;}
+.slbl.tp{color:var(--G);}.slbl.sl{color:var(--R);}
+.slbl label{margin-left:auto;font-size:7.5px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:var(--Tm);font-weight:400;}
+.slr{display:grid;grid-template-columns:1fr 66px;gap:3px;align-items:center;}
+.sc2{font-size:9.5px;font-weight:700;text-align:right;font-family:var(--FM);}
+.sc2.g{color:var(--G);}.sc2.r{color:var(--R);}
+.rr-row{display:flex;justify-content:space-between;font-size:8.5px;margin-bottom:2px;}
+.rr-label{color:var(--Tm);}.rr-val{font-weight:700;font-family:var(--FM);}
+
+/* ═══════════════════════════ HOTKEYS ════════════════════════════════*/
+.hk-row{display:flex;gap:4px;flex-wrap:wrap;padding:4px 6px;background:var(--bg3);border-bottom:1px solid var(--bdr);}
+.hk{display:inline-flex;align-items:center;gap:3px;font-size:8px;color:var(--Tm);}
+.hk kbd{background:var(--bg2);border:1px solid var(--bdr2);color:var(--T);font-family:var(--FM);
+  font-size:8px;padding:0 3px;min-width:14px;text-align:center;}
+
+/* ═══════════════════════════ INST LIST ═════════════════════════════*/
+.board-row{display:flex;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.bb{flex:1;padding:3px;text-align:center;font-size:7.5px;font-weight:700;letter-spacing:.4px;
+  color:var(--Tm);cursor:pointer;border-right:1px solid var(--bdr);transition:all .08s;}
+.bb:last-child{border-right:none;}
+.bb.act{color:var(--G);background:var(--Gg);}
+.ftabs{display:flex;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.ft{flex:1;padding:3px;text-align:center;font-size:7.5px;font-weight:700;color:var(--Tm);cursor:pointer;border-right:1px solid var(--bdr);}
+.ft:last-child{border-right:none;}
+.ft.act{color:var(--G);background:var(--Gg);}
+.isrch{padding:4px 6px;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.isrch input{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--T);
+  font-family:var(--FM);font-size:10px;padding:3px 6px;outline:none;}
+.isrch input:focus{border-color:var(--G);}
+.irow{display:flex;align-items:center;padding:3px 6px;border-bottom:1px solid rgba(30,40,60,.5);
+  cursor:pointer;gap:4px;transition:background .06s;}
+.irow:hover,.irow.sel{background:var(--Gg);}
+.irow.sel{border-left:2px solid var(--G);}
+.itick{font-size:9.5px;font-weight:700;color:var(--T);min-width:48px;font-family:var(--FM);}
+.iname{font-size:7.5px;color:var(--Tm);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ipr{font-size:9px;font-weight:600;text-align:right;min-width:40px;font-family:var(--FM);}
+.ipr.up{color:var(--G);}.ipr.dn{color:var(--R);}.ipr.fl{color:var(--Tm);}
+.ifav{color:var(--Y);font-size:9px;}
+
+/* ═══════════════════════════ CENTER ════════════════════════════════*/
+.cen{background:var(--bg0);border-right:1px solid var(--bdr);overflow:hidden;display:flex;flex-direction:column;}
+
+/* Market bar */
+.mbar{display:flex;align-items:stretch;background:var(--bg1);border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.mc{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 9px;border-right:1px solid var(--bdr);}
+.ml{font-size:7.5px;color:var(--Tm);letter-spacing:.8px;text-transform:uppercase;margin-bottom:1px;}
+.mv{font-size:13px;font-weight:700;font-family:var(--FM);}
+.mv.bid{color:var(--T);}.mv.ask{color:var(--G);}.mv.red{color:var(--R);}
+.msp{font-size:9.5px;color:var(--Tm);font-family:var(--FM);}
+/* Big bid/ask for scalper */
+.mc.big-bid .mv{font-size:18px;color:var(--T);}
+.mc.big-ask .mv{font-size:18px;color:var(--G);}
+
+/* KPI strip */
+.kstrip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.kc{padding:5px 7px;border-right:1px solid var(--bdr);}
+.kc:last-child{border-right:none;}
+.kl{font-size:7.5px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--Tm);margin-bottom:1px;}
+.kv{font-size:14px;font-weight:700;letter-spacing:-.3px;font-family:var(--FM);}
+.kv.g{color:var(--G);}.kv.r{color:var(--R);}.kv.y{color:var(--Y);}
+.ks{font-size:7.5px;color:var(--Td);margin-top:1px;font-family:var(--FM);}
+
+/* Chart */
+.chart-wrap{position:relative;border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.chart-toolbar{display:flex;align-items:center;gap:3px;padding:3px 7px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.chart-toolbar span{font-size:7.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--Tm);margin-right:2px;}
+.ct{padding:2px 5px;font-size:7.5px;font-weight:700;color:var(--Tm);cursor:pointer;border:1px solid var(--bdr);
+  background:transparent;font-family:var(--FM);letter-spacing:.3px;transition:all .08s;}
+.ct.act{color:var(--G);border-color:var(--G);background:var(--Gg);}
+.ct:hover:not(.act){color:var(--T);border-color:var(--bdr2);}
+canvas#chartc{width:100%;height:200px;display:block;cursor:crosshair;}
+.chart-tooltip{position:absolute;top:28px;left:8px;font-size:9px;color:var(--T);pointer-events:none;
+  background:var(--bg3);padding:3px 7px;border:1px solid var(--bdr2);opacity:0;transition:opacity .12s;
+  font-family:var(--FM);z-index:10;white-space:nowrap;}
+.chart-tooltip.vis{opacity:1;}
+
+/* Price ladder */
+.lad{display:flex;margin:5px 7px;border:1px solid var(--bdr);overflow:hidden;flex-shrink:0;}
+.lc{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-right:1px solid var(--bdr);}
+.lc:last-child{border-right:none;}
+.lc.lsl{background:rgba(224,80,80,.04);}
+.lc.len{background:rgba(61,142,255,.04);}
+.lc.ltp{background:rgba(61,142,255,.04);}
+.ltag{font-size:6.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;}
+.lc.lsl .ltag{color:var(--R);}.lc.len .ltag{color:var(--Y);}.lc.ltp .ltag{color:var(--G);}
+.lpr{font-size:14px;font-weight:700;letter-spacing:-.3px;font-family:var(--FM);}
+.lc.lsl .lpr{color:var(--R);}.lc.len .lpr{color:var(--Y);}.lc.ltp .lpr{color:var(--G);}
+.ldlt{font-size:8.5px;margin-top:2px;font-family:var(--FM);}
+.lc.lsl .ldlt{color:var(--R);}.lc.ltp .ldlt{color:var(--G);}
+
+/* Progress */
+.pgz{padding:0 7px 6px;flex-shrink:0;}
+.pgl{display:flex;justify-content:space-between;font-size:7.5px;margin-bottom:2px;color:var(--Tm);}
+.pgt{height:4px;background:var(--bg3);position:relative;border:1px solid var(--bdr);}
+.pgf{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--Gd),var(--G));transition:width .3s,left .3s;}
+.pgc{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--G);transform:translateX(-50%);box-shadow:0 0 6px var(--G);}
+
+/* Tape (время и сделки) */
+.tape-wrap{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+.tape-hdr{display:grid;grid-template-columns:46px 58px 28px 50px 38px;padding:2px 7px;
+  background:var(--bg2);border-bottom:1px solid var(--bdr);font-size:7px;font-weight:700;
+  letter-spacing:.5px;color:var(--Tm);text-transform:uppercase;flex-shrink:0;}
+.tape{overflow-y:auto;flex:1;}
+.tr2{display:grid;grid-template-columns:46px 58px 28px 50px 38px;padding:2px 7px;
+  border-bottom:1px solid rgba(30,40,60,.5);font-size:9px;align-items:center;
+  font-family:var(--FM);transition:background .1s;}
+.tr2:hover{background:var(--bg2);}
+.tr2.buy{border-left:2px solid var(--G);}
+.tr2.sell{border-left:2px solid var(--R);}
+.ttime{color:var(--Tm);}
+.tinst{font-weight:600;color:var(--T);}
+.tdir{font-weight:700;font-size:8px;}
+.tdir.b{color:var(--G);}.tdir.s{color:var(--R);}
+.tprice{font-weight:600;color:var(--T);}
+.tvol{color:var(--Tm);text-align:right;}
+
+/* Events table */
+.et{width:100%;border-collapse:collapse;}
+.et th{font-size:7px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--Tm);
+  padding:2px 6px;background:var(--bg2);border-bottom:1px solid var(--bdr);text-align:left;}
+.et td{padding:2px 6px;border-bottom:1px solid rgba(30,40,60,.3);font-size:8.5px;vertical-align:top;}
+.et tr:hover td{background:var(--bg2);}
+.ets{color:var(--Td);white-space:nowrap;font-family:var(--FM);}
+.etb{padding:1px 3px;font-size:6.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap;}
+.etb.AUTH{color:var(--B);}.etb.ORD{color:var(--G);}.etb.ERR{color:var(--R);}
+.etb.POS{color:var(--C);}.etb.TP{color:var(--G);}.etb.SL{color:var(--R);}
+.etb.INFO{color:var(--Tm);}.etb.SIG{color:var(--B);}
+.etd{color:var(--T);word-break:break-word;}
+
+/* Active orders */
+.ord-row{display:grid;grid-template-columns:26px 20px 54px 54px 24px 22px;
+  align-items:center;padding:2px 6px;border-bottom:1px solid rgba(30,40,60,.3);
+  font-size:9px;gap:2px;font-family:var(--FM);}
+.ord-row:hover{background:var(--bg2);}
+.obadge{font-size:6.5px;font-weight:700;padding:1px 2px;border:1px solid;}
+.obadge.LMT{border-color:var(--Tm);color:var(--Tm);}
+.obadge.STP{border-color:var(--Y);color:var(--Y);}
+.obadge.SLC{border-color:var(--B);color:var(--B);}
+.ocx{color:var(--R);cursor:pointer;text-align:center;font-size:11px;padding:1px 2px;border:1px solid transparent;}
+.ocx:hover{border-color:var(--R);}
+
+/* Right panel */
+.rp{background:var(--bg1);overflow-y:auto;display:flex;flex-direction:column;}
+.arow{display:flex;justify-content:space-between;align-items:center;padding:3px 8px;border-bottom:1px solid var(--bdr);}
+.al{font-size:7.5px;color:var(--Tm);}
+.av{font-size:9.5px;font-weight:600;font-family:var(--FM);}
+.av.g{color:var(--G);}.av.r{color:var(--R);}.av.y{color:var(--Y);}
+.sbox{margin:5px 6px;padding:6px;background:var(--bg3);border:1px solid var(--bdr);text-align:center;}
+.sl_{font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--Tm);}
+.sv{font-size:11px;font-weight:700;letter-spacing:1.2px;margin-top:2px;}
+.sv.INIT{color:var(--Tm);}.sv.BUYING{color:var(--Y);}
+.sv.POSITION_OPEN{color:var(--G);}.sv.CLOSED{color:var(--C);}
+.sv.ERROR,.sv.TIMEOUT{color:var(--R);}.sv.CANCELLED{color:var(--Tm);}.sv.CLOSING{color:var(--Y);}
+
+/* Sparkline */
+.spk{padding:5px 6px 2px;border-bottom:1px solid var(--bdr);}
+.spkt{font-size:7.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--Tm);margin-bottom:3px;}
+canvas#spkc{width:100%;height:42px;display:block;}
+
+/* DOM (Depth of Market) mini */
+.dom-wrap{padding:4px 6px;border-bottom:1px solid var(--bdr);}
+.dom-t{font-size:7.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--Tm);margin-bottom:4px;}
+.dom-row{display:grid;grid-template-columns:50px 1fr 50px;gap:2px;align-items:center;margin-bottom:2px;font-size:8px;font-family:var(--FM);}
+.dom-vol{text-align:right;}.dom-vol.b{color:var(--G);}.dom-vol.a{color:var(--R);}
+.dom-bar-wrap{height:5px;background:var(--bg3);border-radius:1px;overflow:hidden;position:relative;}
+.dom-bar{height:100%;border-radius:1px;}
+.dom-bar.bid{background:rgba(61,142,255,.45);float:right;}
+.dom-bar.ask{background:rgba(224,80,80,.45);}
+.dom-price{text-align:center;color:var(--T);}
+
+/* Roundtrip */
+.rt-panel{padding:4px 8px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;background:var(--bg2);}
+.rt-bars{display:flex;gap:2px;align-items:flex-end;height:16px;}
+.rtb{width:6px;background:var(--G);opacity:.3;border-radius:1px 1px 0 0;}
+.rtb.hi{opacity:1;}
+
+/* LOG */
+.log{border-top:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;background:var(--bg0);}
+.log-bar{display:flex;align-items:center;gap:5px;padding:2px 8px;background:var(--bg2);border-bottom:1px solid var(--bdr);flex-shrink:0;}
+.log-scroll{flex:1;overflow-y:auto;font-size:9.5px;}
+.ll{display:grid;grid-template-columns:50px 38px 1fr;padding:1px 8px;border-bottom:1px solid rgba(30,40,60,.2);}
+.ll:hover{background:var(--bg2);}
+.lts{color:var(--Td);font-family:var(--FM);}
+.llv{font-weight:700;font-size:8.5px;font-family:var(--FM);}
+.llv.OK{color:var(--G);}.llv.ERR{color:var(--R);}.llv.WRN{color:var(--Y);}.llv.INF{color:var(--B);}
+.lm{color:var(--T);}.lm.g{color:var(--G);}.lm.r{color:var(--R);}.lm.w{color:var(--Y);}
+.note{font-size:8.5px;color:var(--Tm);padding:4px 7px;}
+.warn-note{font-size:7.5px;color:var(--Y);padding:2px 7px;background:rgba(212,160,48,.06);border-bottom:1px solid var(--bdr);}
+
+/* Theme btn */
+.theme-btn{background:transparent;border:none;color:var(--Tm);font-size:13px;padding:0 8px;
+  height:30px;cursor:pointer;border-left:1px solid var(--bdr);transition:color .15s;}
+.theme-btn:hover{color:var(--T);}
+
+/* 1-click */
+.oneclick-row{display:flex;gap:3px;margin-bottom:5px;}
+.oc-btn{flex:1;padding:6px 2px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;
+  border:2px solid;transition:all .08s;font-family:var(--FM);}
+.oc-btn:active{transform:scale(.96);}
+.oc-buy{border-color:var(--G);color:var(--G);background:rgba(61,142,255,.1);}
+.oc-buy:hover{background:rgba(61,142,255,.22);box-shadow:0 0 12px rgba(61,142,255,.3);}
+.oc-sell{border-color:var(--R);color:var(--R);background:var(--Rg);}
+.oc-sell:hover{background:rgba(224,80,80,.22);}
+
+/* MISC */
+@keyframes flash{from{background:rgba(61,142,255,.14);}to{background:transparent;}}
+.fl td{animation:flash .5s ease;}
+@keyframes upd{0%{opacity:.5;}100%{opacity:1;}}
+.upd{animation:upd .3s ease;}
+@keyframes pricebump{0%{transform:scale(1.04);}100%{transform:scale(1);}}
+.pricebump{animation:pricebump .18s ease;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<!-- ════ TOPBAR ════════════════════════════════════════════════════ -->
+<div class="tb">
+  <div class="tb-logo">CASSANDRA·HERMES</div>
+  <div class="tc"><span class="tl">MOEX</span><span class="tv y" id="moex-t">--:--:--</span></div>
+  <div class="tc"><span class="tl">СЧЁТ</span><span class="tv y" id="tb-acct">—</span></div>
+  <div class="tc"><span class="tl">СРЕДСТВА</span><span class="tv" id="tb-tf">—</span></div>
+  <div class="tc"><span class="tl">ДОСТУПНО</span><span class="tv g" id="tb-af">—</span></div>
+  <div class="tc"><span class="tl">FINREZ</span><span class="tv" id="tb-rz">—</span></div>
+  <div class="tc"><span class="tl">КОМИС.</span><span class="tv r" id="tb-cm">—</span></div>
+  <div class="tc"><span class="tl">ПРОСАДКА</span><span class="tv r" id="tb-dd">—</span></div>
+  <div class="tc" style="flex-shrink:0;"><span class="tl">ТИКОВ/С</span><span class="tv y" id="tb-tps">0</span></div>
+  <div class="tb-r">
+    <div class="tc" style="border-left:1px solid var(--bdr);gap:5px;">
+      <div class="dot" id="dot"></div>
+      <span class="tv" id="tb-st" style="font-size:9.5px;">OFFLINE</span>
+    </div>
+    <div class="tc" style="border-left:1px solid var(--bdr);"><span class="tl">RT</span><span class="tv y" id="tb-rt" style="font-size:9.5px;">—</span></div>
+    <div class="tc" style="border-left:1px solid var(--bdr);"><span class="tv" id="sysclk" style="font-size:9.5px;">--:--:--</span></div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Day/Night">🌙</button>
+    <button class="lb active" onclick="setLang('ru',this)">RU</button>
+    <button class="lb" onclick="setLang('en',this)">EN</button>
+  </div>
+</div>
+
+<!-- ════ BODY ══════════════════════════════════════════════════════ -->
+<div class="body">
+
+<!-- ═══ COL 1: INSTRUMENTS ════════════════════════════════════════ -->
+<div class="col">
+  <div class="ph"><span class="ph-n">01</span>ИНСТРУМЕНТЫ</div>
+  <div class="board-row">
+    <div class="bb act" onclick="setBoard(1,this)">FORTS</div>
+    <div class="bb" onclick="setBoard(0,this)">STOCK</div>
+    <div class="bb" onclick="setBoard(2,this)">OTHER</div>
+  </div>
+  <div class="ftabs">
+    <div class="ft act" onclick="setITab(0,this)">ВСЕ</div>
+    <div class="ft" onclick="setITab(1,this)">★ FAV</div>
+    <div class="ft" onclick="setITab(2,this)">НЕДАВНИЕ</div>
+  </div>
+  <div class="isrch"><input id="isrch" placeholder="Поиск тикера..." oninput="filterI(this.value)"/></div>
+  <div class="sc" id="ilist"><div class="note">Загрузка...</div></div>
+</div>
+
+<!-- ═══ COL 2: CENTER ══════════════════════════════════════════════ -->
+<div class="cen" id="cen">
+
+  <!-- Market bar -->
+  <div class="mbar">
+    <div class="mc" style="flex-direction:row;align-items:center;gap:6px;border-right:1px solid var(--bdr);padding:4px 10px;">
+      <span style="font-size:13px;font-weight:700;color:var(--G);letter-spacing:1px;font-family:var(--FM);" id="mk-tk">—</span>
+      <span style="font-size:8.5px;color:var(--Tm);" id="mk-nm">выберите инструмент</span>
+    </div>
+    <div class="mc big-bid"><div class="ml">BID</div><div class="mv bid" id="mk-bid">—</div></div>
+    <div class="mc big-ask"><div class="ml">ASK</div><div class="mv ask" id="mk-ask">—</div></div>
+    <div class="mc"><div class="ml">СПРЕД</div><div class="msp" id="mk-sp">—</div></div>
+    <div class="mc"><div class="ml">LAST</div><div class="mv" id="mk-last">—</div></div>
+    <div class="mc"><div class="ml">DELTA Σ</div><div class="mv" id="mk-delta">—</div></div>
+    <div class="mc" style="margin-left:auto;border-left:1px solid var(--bdr);">
+      <div class="ml">ИЗМЕНЕНИЕ</div>
+      <div style="font-size:12px;font-weight:700;font-family:var(--FM);" id="mk-chg">—</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-wrap">
+    <div class="chart-toolbar">
+      <span>CHART</span>
+      <button class="ct act" id="ct-candle" onclick="setChartType('candle',this)">СВЕЧИ</button>
+      <button class="ct" id="ct-bar" onclick="setChartType('bar',this)">БАРЫ</button>
+      <button class="ct" id="ct-line" onclick="setChartType('line',this)">ЛИНИЯ</button>
+      <span style="margin-left:6px;">ТФ</span>
+      <button class="ct" id="ctf-T" onclick="setTF('T',this)">ТИКИ</button>
+      <button class="ct act" id="ctf-1" onclick="setTF(1,this)">1м</button>
+      <button class="ct" id="ctf-5" onclick="setTF(5,this)">5м</button>
+      <button class="ct" id="ctf-15" onclick="setTF(15,this)">15м</button>
+      <button class="ct" id="ctf-60" onclick="setTF(60,this)">1ч</button>
+      <span style="margin-left:6px;">ПОКАЗ</span>
+      <button class="ct" id="ch-vol" onclick="toggleChartOverlay('vol',this)">VOL</button>
+      <button class="ct act" id="ch-delta" onclick="toggleChartOverlay('delta',this)">DELTA</button>
+      <button class="ct act" id="ch-levels" onclick="toggleChartOverlay('levels',this)">УРОВНИ</button>
+    </div>
+    <canvas id="chartc"></canvas>
+    <div class="chart-tooltip" id="chart-tip"></div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="kstrip">
+    <div class="kc"><div class="kl">ВХОД</div><div class="kv y" id="k-en">—</div><div class="ks">₽</div></div>
+    <div class="kc"><div class="kl">TAKE PROFIT</div><div class="kv g" id="k-tp">—</div><div class="ks" id="k-tp-d">—</div></div>
+    <div class="kc"><div class="kl">STOP LOSS</div><div class="kv r" id="k-sl">—</div><div class="ks" id="k-sl-d">—</div></div>
+    <div class="kc"><div class="kl">P&amp;L</div><div class="kv" id="k-pnl">—</div><div class="ks" id="k-pnl-p">net: —</div></div>
+    <div class="kc"><div class="kl">ДЛИТЕЛЬНОСТЬ</div><div class="kv" id="k-dur">—</div><div class="ks">сек</div></div>
+  </div>
+
+  <!-- Price ladder -->
+  <div class="lad">
+    <div class="lc lsl"><div class="ltag">STOP LOSS</div><div class="lpr" id="l-sl">—</div><div class="ldlt" id="l-sl-d">—</div></div>
+    <div class="lc len"><div class="ltag">ВХОД / ASK</div><div class="lpr" id="l-en">—</div><div class="ldlt" style="color:var(--Y);">entry</div></div>
+    <div class="lc ltp"><div class="ltag">TAKE PROFIT</div><div class="lpr" id="l-tp">—</div><div class="ldlt" id="l-tp-d">—</div></div>
+  </div>
+  <div class="pgz">
+    <div class="pgl"><span style="color:var(--R);">◄ SL</span><span>ПОЗИЦИЯ</span><span style="color:var(--G);">TP ►</span></div>
+    <div class="pgt"><div class="pgf" id="pgf" style="left:0;width:50%;"></div><div class="pgc" id="pgc" style="left:50%;"></div></div>
+  </div>
+
+  <!-- Tape -->
+  <div class="ph" style="flex-shrink:0;">
+    <span class="ph-n">TAPE</span>ВРЕМЯ И СДЕЛКИ
+    <span style="margin-left:auto;color:var(--G);font-size:8.5px;" id="tc-n">0</span>
+  </div>
+  <div class="tape-hdr"><span>ВРЕМЯ</span><span>ИНСТРУМ.</span><span>БС</span><span>ЦЕНА</span><span style="text-align:right;">ОБЪ.</span></div>
+  <div class="tape-wrap">
+    <div class="tape" id="tfeed"><div class="note">Ожидание сделок...</div></div>
+  </div>
+
+  <!-- Events -->
+  <div class="ph" style="flex-shrink:0;border-top:1px solid var(--bdr);">
+    <span class="ph-n">EVT</span>СОБЫТИЯ
+    <span style="margin-left:auto;color:var(--G);font-size:8.5px;" id="ev-n">0</span>
+  </div>
+  <div style="overflow-y:auto;max-height:120px;">
+    <table class="et" id="et">
+      <thead><tr><th width="46">ВРЕМЯ</th><th width="54">ТИП</th><th>ОПИСАНИЕ</th></tr></thead>
+      <tbody id="eb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ COL 3: ORDER ENTRY ═════════════════════════════════════════ -->
+<div class="col" style="overflow-y:auto;">
+  <div class="ph" style="position:sticky;top:0;z-index:5;"><span class="ph-n">02</span>ВЫСТАВЛЕНИЕ ОРДЕРА</div>
+
+  <!-- Hotkeys -->
+  <div class="hk-row">
+    <span class="hk"><kbd>B</kbd>BUY</span>
+    <span class="hk"><kbd>S</kbd>SELL</span>
+    <span class="hk"><kbd>X</kbd>CANCEL ALL</span>
+    <span class="hk"><kbd>C</kbd>CLOSE POS</span>
+    <span class="hk"><kbd>±</kbd>VOL</span>
+  </div>
+
+  <!-- 1-click BUY/SELL -->
+  <div class="sec">
+    <div class="sec-t">⚡ 1-КЛИК СКАЛЬПЕРСКИЕ КНОПКИ</div>
+    <div class="oneclick-row">
+      <div class="oc-btn oc-buy" onclick="oneClickBuy()">▲ BUY<br/><span style="font-size:10px;font-weight:400;" id="oc-bid-price">—</span></div>
+      <div class="oc-btn oc-sell" onclick="oneClickSell()">▼ SELL<br/><span style="font-size:10px;font-weight:400;" id="oc-ask-price">—</span></div>
+    </div>
+    <div class="qvol">
+      <div class="qvb act" id="qv1" onclick="setQVol(1,this)">×1</div>
+      <div class="qvb" id="qv2" onclick="setQVol(2,this)">×2</div>
+      <div class="qvb" id="qv5" onclick="setQVol(5,this)">×5</div>
+      <div class="qvb" id="qv10" onclick="setQVol(10,this)">×10</div>
+    </div>
+    <div class="f2" style="margin-top:2px;">
+      <button class="btn br bw" style="padding:4px;font-size:9px;" onclick="closePos()">ЗАКРЫТЬ ПОЗИЦИЮ</button>
+      <button class="btn bx bw" style="padding:4px;font-size:9px;" onclick="cancelAllSL()">СНЯТЬ ВСЕ SL/TP</button>
+    </div>
+  </div>
+
+  <!-- Auto-trade -->
+  <div class="sec">
+    <div class="sec-t">⚙ АВТО-ТОРГОВЛЯ (CASSANDRA)</div>
+    <div class="f2">
+      <div class="f"><label>ТИКЕР</label><input class="fi" id="cfg-tk" value="SBER" maxlength="10"/></div>
+      <div class="f"><label>ОБЪЁМ</label><input class="fi" id="cfg-vol" type="number" value="1" min="1"/></div>
+    </div>
+    <div class="f2">
+      <div class="f"><label>TP %</label><input class="fi" id="cfg-tp" type="number" value="0.5" step="0.1" min="0.01"/></div>
+      <div class="f"><label>SL %</label><input class="fi" id="cfg-sl" type="number" value="0.5" step="0.1" min="0.01"/></div>
+    </div>
+    <div class="f"><label>МАК. МОН. (МИН)</label><input class="fi" id="cfg-mon" type="number" value="120" min="1"/></div>
+    <div class="f2" style="margin-top:2px;">
+      <button class="btn bg" id="b-launch" onclick="autoStart()">▶ ЗАПУСК</button>
+      <button class="btn br" id="b-stop" onclick="autoStop()" disabled>■ СТОП</button>
+    </div>
+  </div>
+
+  <!-- Manual order -->
+  <div class="sec">
+    <div class="sec-t">📋 РУЧНОЙ ОРДЕР</div>
+    <div class="ot">
+      <div class="ot-t act" id="ot-lmt" onclick="setOT('limit',this)">LIMIT<span class="ot-tip">точная цена</span></div>
+      <div class="ot-t" id="ot-stp" onclick="setOT('stoplimit',this)">STOP-LMT<span class="ot-tip">триггер</span></div>
+      <div class="ot-t" id="ot-slc" onclick="setOT('sltp',this)">COND SL/TP<span class="ot-tip">к позиции</span></div>
+    </div>
+    <div class="sides">
+      <div class="side buy-s act" id="sb" onclick="setSide('buy')">▲ BUY</div>
+      <div class="side sel-s" id="ss" onclick="setSide('sell')">▼ SELL</div>
+    </div>
+    <div class="f2">
+      <div class="f"><label>ЦЕНА (RAW)</label><input class="fi" id="ord-pr" type="number" placeholder="auto" step="1"/></div>
+      <div class="f"><label>ОБЪЁМ</label><input class="fi" id="ord-vol" type="number" value="1" min="1"/></div>
+    </div>
+    <div class="f"><label>ТОРГОВЫЙ СЧЁТ</label>
+      <select class="fi" id="ord-acct"><option value="">Загрузка...</option></select>
+    </div>
+    <!-- TP -->
+    <div class="slb">
+      <div class="slbl tp">▲ TAKE PROFIT
+        <label><input type="checkbox" id="tp-on" checked onchange="recalc()"> ВКЛ</label>
+      </div>
+      <div class="mrow" id="tp-mrow">
+        <div class="mb act" onclick="setM('tp','pct',this)">%</div>
+        <div class="mb" onclick="setM('tp','pts',this)">ПУНКТОВ</div>
+        <div class="mb" onclick="setM('tp','price',this)">ЦЕНА</div>
+      </div>
+      <div class="slr">
+        <input class="fi" id="tp-v" type="number" value="0.5" step="0.1" min="0" oninput="recalc()"/>
+        <div class="sc2 g" id="tp-calc">—</div>
+      </div>
+    </div>
+    <!-- SL -->
+    <div class="slb">
+      <div class="slbl sl">▼ STOP LOSS
+        <label><input type="checkbox" id="sl-on" checked onchange="recalc()"> ВКЛ</label>
+      </div>
+      <div class="mrow" id="sl-mrow">
+        <div class="mb act" onclick="setM('sl','pct',this)">%</div>
+        <div class="mb" onclick="setM('sl','pts',this)">ПУНКТОВ</div>
+        <div class="mb" onclick="setM('sl','price',this)">ЦЕНА</div>
+      </div>
+      <div class="slr">
+        <input class="fi" id="sl-v" type="number" value="0.5" step="0.1" min="0" oninput="recalc()"/>
+        <div class="sc2 r" id="sl-calc">—</div>
+      </div>
+    </div>
+    <div style="margin-bottom:4px;">
+      <div class="rr-row"><span class="rr-label">R/R RATIO</span><span class="rr-val" id="rr">1:1.00</span></div>
+      <div class="rr-row"><span class="rr-label">СТОИМОСТЬ</span><span class="rr-val" id="cost">—</span></div>
+      <div class="rr-row"><span class="rr-label">КОМИССИЯ ~</span><span class="rr-val" style="color:var(--R);" id="comm-est">~15 ₽</span></div>
+    </div>
+    <button class="btn bg bw" id="b-place" style="padding:7px;font-size:10.5px;" onclick="placeOrder()">⚡ ВЫСТАВИТЬ ОРДЕР</button>
+  </div>
+
+  <!-- Active stop-limits -->
+  <div class="ph" style="position:sticky;top:0;z-index:4;border-top:1px solid var(--bdr);">
+    <span class="ph-n">STP</span>СТОП-ЗАЯВКИ
+    <button class="btn bx" style="margin-left:auto;padding:1px 5px;font-size:7.5px;" onclick="loadOrders()">↻</button>
+    <span style="color:var(--G);font-size:8.5px;margin-left:4px;" id="sl-n">0</span>
+  </div>
+  <div id="ao"><div class="note">Нет активных стоп-заявок</div></div>
+</div>
+
+<!-- ═══ COL 4: ACCOUNT / STATE ══════════════════════════════════════ -->
+<div class="rp">
+  <div class="ph"><span class="ph-n">03</span>СЧЁТ / FINREZ</div>
+  <div class="sbox">
+    <div class="sl_">СТАТУС СИСТЕМЫ</div>
+    <div class="sv INIT" id="sv">INIT</div>
+  </div>
+  <div class="ph" style="border-top:1px solid var(--bdr);"><span class="ph-n">FIN</span>ФИНАНСОВЫЙ РЕЗУЛЬТАТ</div>
+  <div class="arow"><span class="al">СРЕДСТВА</span><span class="av" id="a-tf">—</span></div>
+  <div class="arow"><span class="al">ДОСТУПНО</span><span class="av g" id="a-af">—</span></div>
+  <div class="arow"><span class="al">FINREZ ₽</span><span class="av" id="a-rz">—</span></div>
+  <div class="arow"><span class="al">КОМИССИЯ</span><span class="av r" id="a-cm">—</span></div>
+  <div class="arow"><span class="al">МАРЖА PnL</span><span class="av" id="a-mr">—</span></div>
+  <div class="arow"><span class="al">ТЕК. РЕЗУЛЬТАТ</span><span class="av" id="a-mru">—</span></div>
+  <div class="arow"><span class="al">ПРОСАДКА</span><span class="av r" id="a-dd">—</span></div>
+  <div class="ph" style="border-top:1px solid var(--bdr);"><span class="ph-n">POS</span>ТЕКУЩАЯ ПОЗИЦИЯ</div>
+  <div class="arow"><span class="al">ВХОД</span><span class="av y" id="a-en">—</span></div>
+  <div class="arow"><span class="al">TP</span><span class="av g" id="a-tp">—</span></div>
+  <div class="arow"><span class="al">SL</span><span class="av r" id="a-sl">—</span></div>
+  <div class="arow"><span class="al">P&L БРУТТО</span><span class="av" id="a-pnl">—</span></div>
+  <div class="arow"><span class="al">КОМИССИЯ</span><span class="av r" id="a-com">—</span></div>
+  <div class="arow"><span class="al">P&L НЕТТО</span><span class="av" id="a-net">—</span></div>
+  <div class="arow"><span class="al">ВЫХОД</span><span class="av" id="a-ex">—</span></div>
+  <div class="arow"><span class="al">ПРИЧИНА</span><span class="av" id="a-rea">—</span></div>
+  <!-- DOM mini -->
+  <div class="dom-wrap">
+    <div class="dom-t">СТАКАН L2 (ТОП-5)</div>
+    <div id="dom-ask-rows"></div>
+    <div style="text-align:center;font-size:9px;color:var(--Tm);padding:2px 0;font-family:var(--FM);" id="dom-spread">спред —</div>
+    <div id="dom-bid-rows"></div>
+  </div>
+  <!-- Sparkline -->
+  <div class="spk">
+    <div class="spkt">ИСТОРИЯ ЦЕН</div>
+    <canvas id="spkc" height="42"></canvas>
+  </div>
+  <!-- RoundTrip -->
+  <div class="rt-panel">
+    <div>
+      <div style="font-size:7px;color:var(--Tm);letter-spacing:.8px;text-transform:uppercase;margin-bottom:1px;">ROUNDTRIP</div>
+      <div style="font-size:13px;font-weight:700;color:var(--Y);font-family:var(--FM);" id="rt-v">—</div>
+    </div>
+    <div class="rt-bars" id="rt-bars">
+      <div class="rtb" id="rb0" style="height:2px;"></div>
+      <div class="rtb" id="rb1" style="height:2px;"></div>
+      <div class="rtb hi" id="rb2" style="height:2px;"></div>
+    </div>
+  </div>
+  <div style="font-size:7.5px;color:var(--Td);text-align:center;padding:6px;line-height:1.9;margin-top:auto;letter-spacing:.4px;">
+    CASSANDRA · HERMES v11<br/>SCALPER PRO · MOEX/FORTS<br/>© 2024–2026 E.KOSHTENKO
+  </div>
+</div>
+
+</div><!-- /body -->
+
+<!-- ════ LOG ════════════════════════════════════════════════════════ -->
+<div class="log">
+  <div class="log-bar">
+    <span style="font-size:7.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--Tm);">◉ СИСТЕМНЫЙ ЛОГ</span>
+    <span style="font-size:8.5px;color:var(--G);margin-left:4px;" id="log-n">0</span>
+    <div style="margin-left:auto;display:flex;gap:4px;">
+      <button class="btn bx" style="padding:1px 6px;font-size:7.5px;" onclick="clearLog()">ОЧИСТИТЬ</button>
+      <button class="btn bx" style="padding:1px 6px;font-size:7.5px;" onclick="loadOrders()">↻ SL/TP</button>
+      <button class="btn bx" style="padding:1px 6px;font-size:7.5px;" id="bas" onclick="toggleAS()">↓ AUTO</button>
+    </div>
+  </div>
+  <div class="log-scroll" id="ls"></div>
+</div>
+</div><!-- /shell -->
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════════
+const API  = 'https://api-cassandra.lite-invest.com';
+const USER = 'Hasanov777@ya.ru';
+const PASS = 'Hasanov777!';
+
+// ════════════════════════════════════════════════════════════════════
+// THEME — инициализация до рендера
+// ════════════════════════════════════════════════════════════════════
+let currentTheme = localStorage.getItem('li-theme') || 'dark';
+document.documentElement.setAttribute('data-theme', currentTheme);
+let _themeColors = null; // кэш цветов темы
+
+function getThemeColors() {
+  if (_themeColors) return _themeColors;
+  const s = getComputedStyle(document.documentElement);
+  const g = n => s.getPropertyValue(n).trim();
+  _themeColors = {
+    bg0:g('--bg0'),bg2:g('--bg2'),bdr:g('--bdr'),
+    G:g('--G'),R:g('--R'),Y:g('--Y'),C:g('--C'),
+    T:g('--T'),Tm:g('--Tm'),Td:g('--Td'),
+    isDark: currentTheme === 'dark'
+  };
+  return _themeColors;
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  localStorage.setItem('li-theme', currentTheme);
+  el('themeBtn').textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+  _themeColors = null; // сбрасываем кэш
+  scheduleChartDraw();
+}
+(function(){ el('themeBtn').textContent = currentTheme === 'dark' ? '🌙' : '☀️'; })();
+
+// ════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════
+let authToken = null;
+let lang = 'ru';
+let autoScroll = true;
+let logN = 0, evN = 0, tcN = 0;
+let priceHist = [];           // sparkline
+let curBid = 0, curAsk = 0;
+let selInst = null;           // {id, ticker, name, lot, pstep, decimals}
+let allInst = [];
+let curBoard = 1, curITab = 0;
+let ordType = 'limit', ordSide = 'buy';
+let tpMode = 'pct', slMode = 'pct';
+let rtHist = [0, 0, 0];
+let accts = [];
+let tradeRunning = false;
+let sigConns = {};
+let quickVol = 1;
+let domData = {asks:[], bids:[]};  // стакан
+let cumulativeDelta = 0;           // накопленная дельта
+let ticksPerSec = 0, tickCount = 0; // счётчик тиков
+let entryPrice = 0, tpPrice = 0, slPrice = 0; // уровни позиции
+
+// Chart state
+let chartType  = 'candle';
+let chartTF    = 1;           // минуты или 'T' (тики)
+let chartOverlays = {vol:false, delta:true, levels:true};
+let realCandles = {};          // tfKey → [{t,o,h,l,c,v,bv,sv,cd}]
+let tickCandles = [];          // свечи из тиков
+let tickCurCandle = null;
+let allTicks = [];             // {t,p,v,s} — все тики
+let chartDirty = false;        // RAF dirty flag
+let chartMouseIdx = -1;        // индекс свечи под курсором
+let chartScrollOffset = 0;     // свечи с конца
+let chartDataSource = 'demo';
+
+// ════════════════════════════════════════════════════════════════════
+// FLASK
+// ════════════════════════════════════════════════════════════════════
+let flaskSocket = null;
+try {
+  flaskSocket = io();
+  flaskSocket.on('connect',    () => { setDot('on'); log('FLASK','OK','Backend connected'); loadFlaskStatus(); });
+  flaskSocket.on('disconnect', () => { setDot(''); log('FLASK','ERR','Backend disconnected'); });
+  flaskSocket.on('trade_update', d => onFlaskUpdate(d));
+} catch(e) { /* no flask backend */ }
+
+// ════════════════════════════════════════════════════════════════════
+// CLOCK + TPS counter
+// ════════════════════════════════════════════════════════════════════
+setInterval(() => {
+  el('sysclk').textContent = new Date().toLocaleTimeString('ru-RU',{hour12:false});
+}, 1000);
+setInterval(() => {
+  setText('tb-tps', tickCount);
+  ticksPerSec = tickCount;
+  tickCount = 0;
+}, 1000);
+
+// ════════════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════════════
+async function getToken() {
+  if (authToken && !isExpired(authToken)) return authToken;
+  const stored = localStorage.getItem('cassandraToken');
+  if (stored && !isExpired(stored)) { authToken = stored; return authToken; }
+  log('AUTH','INF','Авторизация...');
+  try {
+    const r = await fetch(`${API}/api/Authentication/login`, {
+      method:'POST',
+      headers:{'accept':'*/*','Content-Type':'application/json'},
+      body: JSON.stringify({email:USER, password:PASS})
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (!d.accessToken) throw new Error('No accessToken');
+    authToken = d.accessToken;
+    localStorage.setItem('cassandraToken', authToken);
+    log('AUTH','OK',`Токен получен (${authToken.length} chars)`);
+    return authToken;
+  } catch(e) { log('AUTH','ERR', e.message); return null; }
+}
+function isExpired(tok) {
+  try { return Date.now() >= JSON.parse(atob(tok.split('.')[1])).exp * 1000; }
+  catch { return true; }
+}
+function hdrs(tok) {
+  return {'Authorization':`Bearer ${tok}`,'Content-Type':'application/json','Accept':'application/json'};
+}
+
+// ════════════════════════════════════════════════════════════════════
+// SIGNALR HUB FACTORY
+// ════════════════════════════════════════════════════════════════════
+async function hub(path, tok, method, handler) {
+  if (sigConns[path]) { try { await sigConns[path].stop(); } catch{} }
+  try {
+    const conn = new signalR.HubConnectionBuilder()
+      .withUrl(`${API}/hubs/${path}`, {
+        accessTokenFactory: () => tok,
+        withCredentials: true,
+        transport: signalR.HttpTransportType.WebSockets,
+        skipNegotiation: false
+      })
+      .withAutomaticReconnect([0,2000,5000,10000,15000,30000])
+      .build();
+    conn.on(method, handler);
+    conn.onreconnecting(() => { setDot('pulse'); log('SIG','WRN',`Reconnecting /hubs/${path}`); });
+    conn.onreconnected(() => { setDot('on'); log('SIG','OK',`Reconnected /hubs/${path}`); });
+    conn.onclose(()  => { log('SIG','WRN',`Closed /hubs/${path}`); });
+    await conn.start();
+    sigConns[path] = conn;
+    log('SIG','OK',`→ /hubs/${path} [${method}]`);
+    return conn;
+  } catch(e) {
+    log('SIG','WRN',`/hubs/${path}: ${e.message}`);
+    return null;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// GLOBAL HUBS (time, finrez, trade, order)
+// ════════════════════════════════════════════════════════════════════
+async function connectSignalR() {
+  const tok = await getToken();
+  if (!tok) { log('SIG','ERR','No token'); return; }
+
+  hub('time', tok, 'Time', d => {
+    const t = d?.t || (typeof d==='string'?d:null);
+    if (t) el('moex-t').textContent = t;
+  });
+
+  hub('finrez', tok, 'FinRez', data => {
+    const arr = Array.isArray(data) ? data : [data];
+    arr.forEach(d => {
+      if (!d) return;
+      const f2 = v => v!==undefined ? r2(v) : '—';
+      setText('a-tf',f2(d.tf));  setText('a-af',f2(d.af));
+      setText('tb-tf',f2(d.tf)); setText('tb-af',f2(d.af));
+      const rz=parseFloat(d.rz||0);
+      setTextCls('a-rz',  (rz>=0?'+':'')+f2(rz), 'av '+(rz>=0?'g':'r'));
+      setTextCls('tb-rz', (rz>=0?'+':'')+f2(rz), 'tv '+(rz>=0?'g':'r'));
+      setText('a-cm',f2(d.cm)); setText('tb-cm',f2(d.cm));
+      const mr=parseFloat(d.mr||0), mru=parseFloat(d.mru||0);
+      setTextCls('a-mr',  (mr>=0?'+':'')+f2(mr),  'av '+(mr>=0?'g':'r'));
+      setTextCls('a-mru', (mru>=0?'+':'')+f2(mru),'av '+(mru>=0?'g':'r'));
+      setText('a-dd',f2(d.dd)); setText('tb-dd',f2(d.dd));
+    });
+  });
+
+  hub(`trade?email=${encodeURIComponent(USER)}`, tok, 'MyTrade', data => {
+    const arr = Array.isArray(data) ? data : [data];
+    arr.forEach(addTrade);
+  });
+
+  hub('order', tok, 'RoundTrip', d => {
+    if (!d?.r) return;
+    const parts = d.r.split(':');
+    if (parts.length < 3) return;
+    const ms = parseFloat(parts[2]) * 1000;
+    setText('rt-v', ms.toFixed(1).replace('.',',') + ' мс');
+    setText('tb-rt', ms.toFixed(1).replace('.',',') + 'мс');
+    rtHist = [rtHist[1], rtHist[2], ms];
+    drawRtBars();
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INSTRUMENT HUBS (tick + cluster per instrument)
+// ════════════════════════════════════════════════════════════════════
+let quoteTimer = null;
+
+async function connectInstrumentHubs(secId) {
+  const tok = await getToken();
+  if (!tok) return;
+
+  // TICK HUB — все тики потоком
+  const tickPath = `tick?securityId=${secId}`;
+  await hub(tickPath, tok, 'Tick', ticks => {
+    let arr = Array.isArray(ticks) ? ticks : [ticks];
+    if (arr.length && Array.isArray(arr[0])) arr = arr[0];
+    arr.forEach(tk => {
+      if (!tk || typeof tk !== 'object') return;
+      let p = parseFloat(tk.p || 0);
+      if (p <= 0) return;
+      if (p > 10000) p /= 100;
+      const v = parseFloat(tk.v || 1);
+      const s = parseInt(tk.s ?? 0); // 0=buy 1=sell
+      onTick(p, v, s, tk.t);
+    });
+  });
+  // ChangePrice в том же соединении
+  if (sigConns[tickPath]) {
+    sigConns[tickPath].on('ChangePrice', d => {
+      if (!d || d.p === undefined) return;
+      const pct = parseFloat(d.p);
+      setTextCls('mk-chg',
+        (pct>=0?'+':'') + pct.toFixed(2).replace('.',',') + '%',
+        'tv ' + (pct>=0?'g':'r')
+      );
+    });
+  }
+
+  // CLUSTER HUB — готовые OHLCV свечи
+  const clPath = `cluster?securityId=${secId}`;
+  const clConn = await hub(clPath, tok, 'Cluster', data => {
+    let arr = Array.isArray(data) ? data : [data];
+    if (arr.length && Array.isArray(arr[0])) arr = arr[0];
+    arr.forEach(raw => raw && typeof raw==='object' && parseClusterBar(raw));
+  });
+  if (!clConn) log('CHART','WRN','Cluster hub N/A — режим тиков');
+  else         log('CHART','OK','Cluster hub → OHLCV данные активны');
+
+  // REST POLLING стакана каждые 2.5 сек
+  if (quoteTimer) clearInterval(quoteTimer);
+  quoteTimer = setInterval(() => pollQuotes(secId), 2500);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// QUOTE POLLING (стакан)
+// ════════════════════════════════════════════════════════════════════
+async function pollQuotes(secId) {
+  if (!selInst || selInst.id !== secId) return;
+  const tok = await getToken();
+  if (!tok) return;
+  try {
+    const r = await fetch(`${API}/Quotes/${secId}/0`, {headers:hdrs(tok)});
+    if (!r.ok) return;
+    const q = await r.json();
+    parseAndApplyQuote(selInst, q);
+  } catch{}
+}
+
+function parseAndApplyQuote(inst, q) {
+  if (!q || typeof q !== 'object') return;
+  const asks = Array.isArray(q.a) ? q.a : [];
+  const bids = Array.isArray(q.b) ? q.b : [];
+
+  function normP(raw) {
+    const f = parseFloat(raw || 0);
+    return f > 10000 ? f / 100 : f;
+  }
+  function parseLevel(lvl) {
+    const p = normP(lvl.p);
+    const v = parseFloat(lvl.l?.v ?? lvl.v ?? 0);
+    return {p, v};
+  }
+
+  const parsedAsks = asks.map(parseLevel).filter(x => x.p > 0).sort((a,b) => a.p - b.p);
+  const parsedBids = bids.map(parseLevel).filter(x => x.p > 0).sort((a,b) => b.p - a.p);
+
+  inst.ask = parsedAsks[0]?.p || normP(q.ba) || 0;
+  inst.bid = parsedBids[0]?.p || normP(q.bb) || 0;
+  inst.last = normP(q.pl) || inst.ask || inst.bid;
+
+  curBid = inst.bid; curAsk = inst.ask;
+  updateMktBar();
+  updateOneClickPrices();
+
+  // Обновляем DOM (стакан)
+  domData.asks = parsedAsks.slice(0, 5);
+  domData.bids = parsedBids.slice(0, 5);
+  renderDOM();
+
+  // Если нет кластерных данных — строим из mid цены
+  const hasReal = realCandles[String(chartTF)]?.length > 2;
+  if (!hasReal && inst.bid > 0 && inst.ask > 0) {
+    const mid = (inst.bid + inst.ask) / 2;
+    onTick(mid, 1, 0);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CLUSTER PARSER — готовые OHLCV бары с объёмом по уровням
+// ════════════════════════════════════════════════════════════════════
+function parseClusterBar(raw) {
+  function norm(v) { const f=parseFloat(v||0); return f>10000?f/100:f; }
+  const o = norm(raw.op);
+  // Поддержка кириллической 'с' в ключе 'сl' (баг Cassandra API)
+  const c = norm(raw.cl ?? raw['\u0441l'] ?? raw.close ?? 0);
+  const h = norm(raw.hi ?? raw.h ?? 0);
+  const l = norm(raw.lo ?? raw.l ?? 0);
+  if (c <= 0 && o <= 0) return;
+
+  // Таймфрейм из поля e ("00:01:00", "00:05:00", "00:15:00", "01:00:00")
+  const eStr = String(raw.e || '00:01:00');
+  const ep = eStr.split(':');
+  const tfMin = parseInt(ep[0])*60 + parseInt(ep[1]||0);
+
+  // Метка времени
+  let ts = raw.t ? (typeof raw.t==='number' ? raw.t : new Date(raw.t).getTime()) : Date.now();
+
+  // Объём и дельта из уровней
+  let bv=0, sv=0;
+  (raw.l || []).forEach(lvl => { bv += parseFloat(lvl.b||0); sv += parseFloat(lvl.a||0); });
+  const vol = bv + sv;
+  const cd  = bv - sv; // cumulative delta этой свечи
+
+  const tfKey = String(tfMin || 1);
+  if (!realCandles[tfKey]) realCandles[tfKey] = [];
+  const arr = realCandles[tfKey];
+  const bucket = Math.floor(ts / (tfMin * 60000)) * (tfMin * 60000);
+  const last = arr[arr.length - 1];
+
+  if (last && last.t === bucket) {
+    last.h  = Math.max(last.h, h||c);
+    last.l  = Math.min(last.l, l||c);
+    last.c  = c;
+    last.v += vol;
+    last.bv+= bv; last.sv+= sv;
+    last.cd = last.bv - last.sv;
+  } else {
+    if (arr.length > 400) arr.shift();
+    arr.push({t:bucket, o:o||c, h:Math.max(h||c,o||c,c), l:Math.min(l||c,o||c,c), c, v:vol, bv, sv, cd});
+  }
+
+  if (tfMin > 0 && String(chartTF) === tfKey) scheduleChartDraw();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TICK HANDLER — единая точка входа для всех тиков
+// ════════════════════════════════════════════════════════════════════
+function onTick(p, v, side, rawTs) {
+  if (!p || p <= 0) return;
+  const now = rawTs ? (typeof rawTs==='number' ? rawTs : new Date(rawTs).getTime()) : Date.now();
+
+  // Счётчик тиков/сек
+  tickCount++;
+
+  // Тик в массив
+  allTicks.push({t:now, p, v, s:side});
+  if (allTicks.length > 10000) allTicks.shift();
+
+  // Sparkline history
+  priceHist.push(p);
+  if (priceHist.length > 200) priceHist.shift();
+
+  // Cumulative delta
+  cumulativeDelta += (side === 0 ? v : -v);
+  const cdEl = el('mk-delta');
+  if (cdEl) {
+    cdEl.textContent = (cumulativeDelta >= 0 ? '+' : '') + Math.round(cumulativeDelta);
+    cdEl.style.color = cumulativeDelta >= 0 ? 'var(--G)' : 'var(--R)';
+  }
+
+  // Update last price in market bar (без перерисовки DOM)
+  el('mk-last').textContent = fmtP(p);
+  const wasUp = el('mk-last')._prevP !== undefined && p >= el('mk-last')._prevP;
+  el('mk-last').style.color = (el('mk-last')._prevP === undefined) ? '' : (p > el('mk-last')._prevP ? 'var(--G)' : p < el('mk-last')._prevP ? 'var(--R)' : '');
+  el('mk-last')._prevP = p;
+
+  // Тиковые свечи
+  buildTickCandle(now, p, v, side);
+
+  // Sparkline (не каждый тик)
+  if (allTicks.length % 5 === 0) drawSpk();
+
+  scheduleChartDraw();
+  recalcPnL(); // обновляем PnL позиции
+}
+
+function buildTickCandle(ts, p, v, side) {
+  if (chartTF === 'T') {
+    // Тиковые бары по 50 тиков
+    const TICK_SIZE = 50;
+    if (!tickCurCandle || tickCurCandle._count >= TICK_SIZE) {
+      if (tickCurCandle) tickCandles.push({...tickCurCandle});
+      tickCurCandle = {t:ts, o:p, h:p, l:p, c:p, v:v||1, bv:side===0?v:0, sv:side===1?v:0, cd:0, _count:1};
+      if (tickCandles.length > 300) tickCandles.shift();
+    } else {
+      updateCandle(tickCurCandle, ts, p, v, side);
+    }
+    return;
+  }
+  const tf = chartTF * 60000;
+  const bucket = Math.floor(ts / tf) * tf;
+  if (!tickCurCandle || tickCurCandle.t !== bucket) {
+    if (tickCurCandle) tickCandles.push({...tickCurCandle});
+    tickCurCandle = {t:bucket, o:p, h:p, l:p, c:p, v:v||1, bv:side===0?v:0, sv:side===1?v:0, cd:0, _count:1};
+    if (tickCandles.length > 300) tickCandles.shift();
+  } else {
+    updateCandle(tickCurCandle, ts, p, v, side);
+  }
+}
+
+function updateCandle(c, ts, p, v, side) {
+  c.h = Math.max(c.h, p);
+  c.l = Math.min(c.l, p);
+  c.c = p; c.t_last = ts;
+  c.v += (v||1); c._count = (c._count||0)+1;
+  if (side===0) c.bv=(c.bv||0)+(v||1);
+  else          c.sv=(c.sv||0)+(v||1);
+  c.cd = (c.bv||0)-(c.sv||0);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INSTRUMENTS
+// ════════════════════════════════════════════════════════════════════
+async function loadInst() {
+  const tok = await getToken();
+  if (!tok) return;
+  try {
+    const r = await fetch(`${API}/Security/${curBoard}?pageNumber=1&pageSize=80&favorite=${curITab}`, {headers:hdrs(tok)});
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const body = await r.json();
+    const list = Array.isArray(body) ? body : (body.data || body.items || []);
+    allInst = list.map(s => ({
+      id: String(s.securityId || s.id || ''),
+      ticker: (s.shortName || s.isin || '').trim().toUpperCase(),
+      name: s.fullName || s.shortName || '',
+      board: curBoard,
+      lot: s.lot || 1,
+      pstep: parseFloat(s.priceStep || s.step || 0.01),
+      decimals: s.decimals !== undefined ? s.decimals : 2,
+      isFav: s.isFavorite || 0,
+      bid:0, ask:0, last:0, chg:null, _prevLast:0
+    })).filter(s => s.id && s.ticker);
+    renderInst(allInst);
+    log('INST','OK',`Загружено: ${allInst.length} инструментов`);
+    // Загружаем цены пачками (3 параллельно)
+    loadPricesBatch(allInst.slice(0, 30));
+  } catch(e) { log('INST','ERR', e.message); el('ilist').innerHTML=`<div class="note">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadPricesBatch(list) {
+  const tok = await getToken(); if (!tok) return;
+  const BATCH = 4;
+  for (let i = 0; i < list.length; i += BATCH) {
+    const chunk = list.slice(i, i + BATCH);
+    await Promise.all(chunk.map(async inst => {
+      try {
+        const r = await fetch(`${API}/Quotes/${inst.id}/0`, {headers:hdrs(tok)});
+        if (!r.ok) return;
+        parseAndApplyQuote(inst, await r.json());
+      } catch{}
+    }));
+    renderInst(allInst);
+    await sleep(80);
+  }
+}
+
+function renderInst(list) {
+  const q = el('isrch').value.toLowerCase();
+  const fl = q ? list.filter(i => i.ticker.toLowerCase().includes(q)||i.name.toLowerCase().includes(q)) : list;
+  const box = el('ilist');
+  if (!fl.length) { box.innerHTML = '<div class="note">Нет инструментов</div>'; return; }
+  // Обновляем только изменившиеся строки (виртуальный DOM)
+  const existingRows = {};
+  box.querySelectorAll('.irow[data-id]').forEach(row => { existingRows[row.dataset.id] = row; });
+  const frag = document.createDocumentFragment();
+  fl.forEach(i => {
+    const priceStr = i.last > 0 ? fmtP(i.last) : '—';
+    const pcls = !i.last ? 'fl' : (i.last > i._prevLast ? 'up' : i.last < i._prevLast ? 'dn' : 'fl');
+    i._prevLast = i.last;
+    const isSel = selInst?.id === i.id;
+    if (existingRows[i.id]) {
+      // Обновляем существующую строку без пересоздания
+      const row = existingRows[i.id];
+      const prEl = row.querySelector('.ipr');
+      if (prEl) { prEl.textContent = priceStr; prEl.className = 'ipr ' + pcls; }
+      if (isSel !== row.classList.contains('sel')) {
+        row.classList.toggle('sel', isSel);
+        if (isSel) row.style.borderLeft = '2px solid var(--G)';
+        else row.style.borderLeft = '';
+      }
+      frag.appendChild(row);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'irow' + (isSel?' sel':'');
+      div.dataset.id = i.id;
+      if (isSel) div.style.borderLeft = '2px solid var(--G)';
+      div.onclick = () => selectI(i.id);
+      div.innerHTML = `<div class="itick">${i.ticker}${i.isFav?'<span class="ifav">★</span>':''}</div><div class="iname" title="${i.name}">${i.name}</div><div class="ipr ${pcls}">${priceStr}</div>`;
+      frag.appendChild(div);
+    }
+  });
+  box.innerHTML = '';
+  box.appendChild(frag);
+}
+
+function filterI(q) { renderInst(allInst); }
+function setBoard(b,btn) {
+  curBoard=b; document.querySelectorAll('.bb').forEach(x=>x.classList.remove('act')); btn.classList.add('act'); loadInst();
+}
+function setITab(t,btn) {
+  curITab=t; document.querySelectorAll('.ft').forEach(x=>x.classList.remove('act')); btn.classList.add('act'); loadInst();
+}
+
+async function selectI(id) {
+  const inst = allInst.find(i => i.id === id);
+  if (!inst) return;
+  selInst = inst;
+  renderInst(allInst);
+  el('mk-tk').textContent = inst.ticker;
+  el('mk-nm').textContent = inst.name;
+  el('cfg-tk').value = inst.ticker.replace(/-\d+\.\d+$/,'').replace(/[HMUZVZX]\d+$/,'') || inst.ticker;
+  // Сброс данных предыдущего инструмента
+  realCandles={};tickCandles=[];tickCurCandle=null;allTicks=[];priceHist=[];
+  cumulativeDelta=0; el('mk-delta').textContent='—'; el('mk-delta').style.color='';
+  // Загружаем цену сразу
+  await loadPricesBatch([inst]);
+  // Отмечаем "последний" на сервере
+  const tok = await getToken();
+  if (tok) fetch(`${API}/Security/latest/${id}`,{method:'POST',headers:hdrs(tok)}).catch(()=>{});
+  // Подключаем хабы
+  connectInstrumentHubs(inst.id);
+  loadOrders();
+  log('INST','INF',`Выбран: ${inst.ticker} id=${id}`);
+  recalc();
+  scheduleChartDraw();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MARKET BAR UPDATE
+// ════════════════════════════════════════════════════════════════════
+function updateMktBar() {
+  if (!selInst) return;
+  const bid = selInst.bid, ask = selInst.ask;
+  setText('mk-bid', bid>0 ? fmtP(bid) : '—');
+  setText('mk-ask', ask>0 ? fmtP(ask) : '—');
+  if (bid>0 && ask>0) setText('mk-sp','Δ '+(ask-bid).toFixed(2).replace('.',','));
+  setText('mk-last', selInst.last>0 ? fmtP(selInst.last) : '—');
+  updateOneClickPrices();
+}
+function updateOneClickPrices() {
+  if (el('oc-bid-price')) el('oc-bid-price').textContent = curBid>0 ? fmtP(curBid) : '—';
+  if (el('oc-ask-price')) el('oc-ask-price').textContent = curAsk>0 ? fmtP(curAsk) : '—';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DOM (Depth of Market) визуализация
+// ════════════════════════════════════════════════════════════════════
+function renderDOM() {
+  const asks = domData.asks.slice().reverse(); // снизу вверх
+  const bids = domData.bids;
+  const maxV = Math.max(...asks.map(x=>x.v), ...bids.map(x=>x.v), 1);
+  function rowHTML(lvl, side) {
+    const pct = Math.min(100, lvl.v / maxV * 100);
+    const volStr = lvl.v >= 1000 ? (lvl.v/1000).toFixed(1)+'к' : lvl.v.toFixed(0);
+    return `<div class="dom-row">
+      <span class="dom-vol ${side}" style="font-size:8px;">${side==='a'?volStr:''}</span>
+      <div class="dom-bar-wrap"><div class="dom-bar ${side==='b'?'bid':'ask'}" style="width:${pct}%"></div></div>
+      <span class="dom-price" style="font-size:8px;">${fmtP(lvl.p)}</span>
+      <span class="dom-vol ${side}" style="font-size:8px;">${side==='b'?volStr:''}</span>
+    </div>`.replace('<div class="dom-row">','<div class="dom-row" style="display:grid;grid-template-columns:36px 1fr 44px 36px;gap:2px;align-items:center;margin-bottom:1px;">');
+  }
+  const askBox = el('dom-ask-rows'); if(askBox) askBox.innerHTML = asks.map(l=>rowHTML(l,'a')).join('');
+  const bidBox = el('dom-bid-rows'); if(bidBox) bidBox.innerHTML = bids.map(l=>rowHTML(l,'b')).join('');
+  if (curBid>0 && curAsk>0) setText('dom-spread','спред '+((curAsk-curBid).toFixed(2).replace('.',','))+' ₽');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ACCOUNTS
+// ════════════════════════════════════════════════════════════════════
+async function loadAccounts() {
+  const tok = await getToken(); if (!tok) return;
+  try {
+    const r = await fetch(`${API}/api/Account/TradeAccountNumbers`, {headers:hdrs(tok)});
+    const data = await r.json();
+    accts = Array.isArray(data) ? data : [];
+    el('ord-acct').innerHTML = accts.map(a=>`<option value="${a}">${a}</option>`).join('');
+    setText('tb-acct', accts[0]||'—');
+    log('ACCT','OK',`Счета: ${accts.join(', ')}`);
+  } catch(e) { log('ACCT','ERR', e.message); }
+}
+function getAcct() { return el('ord-acct').value || accts[0] || '00012'; }
+
+// ════════════════════════════════════════════════════════════════════
+// ORDER UI
+// ════════════════════════════════════════════════════════════════════
+function setLang(l,btn) { lang=l; document.querySelectorAll('.lb').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+function setOT(t,btn) { ordType=t; document.querySelectorAll('.ot-t').forEach(x=>x.classList.remove('act')); btn.classList.add('act'); recalc(); }
+function setSide(s) { ordSide=s; el('sb').classList.toggle('act',s==='buy'); el('ss').classList.toggle('act',s==='sell'); recalc(); }
+function setM(which,mode,btn) {
+  if(which==='tp'){tpMode=mode; document.querySelectorAll('#tp-mrow .mb').forEach(x=>x.classList.remove('act'));}
+  else{slMode=mode; document.querySelectorAll('#sl-mrow .mb').forEach(x=>x.classList.remove('act'));}
+  btn.classList.add('act'); recalc();
+}
+function setQVol(n,btn) {
+  quickVol=n;
+  document.querySelectorAll('.qvb').forEach(x=>x.classList.remove('act')); btn.classList.add('act');
+  el('ord-vol').value = n;
+  recalc();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RECALC — пересчёт TP/SL
+// ════════════════════════════════════════════════════════════════════
+function recalc() {
+  const entry = ordSide==='buy' ? curAsk : curBid;
+  const prInput = parseFloat(el('ord-pr').value);
+  const ep = prInput > 0 ? prInput : entry;
+  const tpV = parseFloat(el('tp-v').value)||0;
+  const slV = parseFloat(el('sl-v').value)||0;
+  const vol = parseInt(el('ord-vol').value)||1;
+  const lot = selInst?.lot || 1;
+  const tpOn = el('tp-on').checked;
+  const slOn = el('sl-on').checked;
+  let tpP=0, slP=0;
+  if (ep > 0) {
+    const dir = ordSide==='buy' ? 1 : -1;
+    tpP = tpMode==='pct' ? ep*(1+dir*tpV/100) : tpMode==='pts' ? ep+dir*tpV : tpV;
+    slP = slMode==='pct' ? ep*(1-dir*slV/100) : slMode==='pts' ? ep-dir*slV : slV;
+    tpP = Math.round(tpP); slP = Math.round(slP);
+  }
+  setText('tp-calc', (tpOn&&tpP>0) ? tpP.toLocaleString('ru-RU')+' ₽' : '—');
+  setText('sl-calc', (slOn&&slP>0) ? slP.toLocaleString('ru-RU')+' ₽' : '—');
+  if (ep > 0) {
+    setText('k-en',fmtP(ep)); setText('l-en',fmtP(ep)); setText('a-en',fmtP(ep)+' ₽');
+    if (tpOn&&tpP>0) { setText('k-tp',fmtP(tpP)); setText('l-tp',fmtP(tpP)); const d=((tpP-ep)/ep*100).toFixed(3); setText('k-tp-d',(d>0?'+':'')+d+'%'); setText('l-tp-d',(d>0?'+':'')+d+'%'); setText('a-tp',fmtP(tpP)+' ₽'); }
+    if (slOn&&slP>0) { setText('k-sl',fmtP(slP)); setText('l-sl',fmtP(slP)); const d=((slP-ep)/ep*100).toFixed(3); setText('k-sl-d',d+'%'); setText('l-sl-d',d+'%'); setText('a-sl',fmtP(slP)+' ₽'); }
+    if (tpOn&&slOn&&tpP&&slP) {
+      const rr = Math.abs(tpP-ep)/Math.abs(slP-ep);
+      const rrEl = el('rr'); rrEl.textContent=`1:${rr.toFixed(2)}`;
+      rrEl.style.color = rr>=1.5?'var(--G)':rr<1?'var(--R)':'var(--Y)';
+    }
+    setText('cost', (ep*vol*lot).toLocaleString('ru-RU',{maximumFractionDigits:2})+' ₽');
+    entryPrice = ep; tpPrice = tpOn?tpP:0; slPrice = slOn?slP:0;
+    scheduleChartDraw();
+  }
+}
+
+function recalcPnL() {
+  if (!entryPrice || !curBid) return;
+  const pnl = (curBid - entryPrice) * (parseInt(el('ord-vol').value)||1) * (selInst?.lot||1);
+  const pnlEl = el('k-pnl');
+  if (pnlEl) { pnlEl.textContent=(pnl>=0?'+':'')+fmtP(pnl)+' ₽'; pnlEl.className='kv '+(pnl>0?'g':pnl<0?'r':''); }
+  if (tpPrice>0||slPrice>0) updateProgress(curBid, entryPrice, tpPrice, slPrice);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PLACE ORDER
+// ════════════════════════════════════════════════════════════════════
+async function placeOrder() {
+  if (!selInst) { log('ORDER','WRN','Выберите инструмент!'); return; }
+  const tok = await getToken(); if (!tok) return;
+  const acct = getAcct();
+  const sid  = selInst.id;
+  const vol  = parseInt(el('ord-vol').value)||1;
+  const side = ordSide==='buy' ? 0 : 1;
+  const prInput = parseFloat(el('ord-pr').value);
+  const ep = prInput>0 ? prInput : (ordSide==='buy' ? curAsk : curBid);
+  if (!ep) { log('ORDER','WRN','Нет цены'); return; }
+  const tpV=parseFloat(el('tp-v').value)||0, slV=parseFloat(el('sl-v').value)||0;
+  const tpOn=el('tp-on').checked, slOn=el('sl-on').checked;
+  const dir = ordSide==='buy' ? 1 : -1;
+  let tpP = tpMode==='pct'?Math.round(ep*(1+dir*tpV/100)):tpMode==='pts'?Math.round(ep+dir*tpV):Math.round(tpV);
+  let slP = slMode==='pct'?Math.round(ep*(1-dir*slV/100)):slMode==='pts'?Math.round(ep-dir*slV):Math.round(slV);
+  const epInt = Math.round(ep);
+  log('ORDER','INF',`${ordType.toUpperCase()} ${ordSide.toUpperCase()} ${vol}×${selInst.ticker} @ ${epInt}`);
+  try {
+    if (ordType==='limit') {
+      const r = await apiPost('/Order', {email:USER,tradeAccount:acct,securityId:sid,price:epInt,volume:vol,side}, tok);
+      logOrdResp(r,'LIMIT');
+      if (r.data) {
+        if (tpOn&&tpP>0) await placeSL(tok,acct,sid,tpP,vol,side===0?1:0,'TP');
+        if (slOn&&slP>0) await placeSL(tok,acct,sid,slP,vol,side===0?1:0,'SL');
+      }
+    } else if (ordType==='stoplimit') {
+      await placeSL(tok,acct,sid,epInt,vol,side,'Stop-Limit');
+    } else {
+      if (tpOn&&tpP>0) { const r=await apiPost('/ConditionalOrder/SLTPOrder',{tradeAccount:acct,securityId:sid,price:tpP},tok); log('SLTP',r.data?'OK':'ERR',`TP @ ${tpP}`); }
+      if (slOn&&slP>0) { const r=await apiPost('/ConditionalOrder/SLTPOrder',{tradeAccount:acct,securityId:sid,price:slP},tok); log('SLTP',r.data?'OK':'ERR',`SL @ ${slP}`); }
+    }
+  } catch(e) { log('ORDER','ERR', e.message); }
+  loadOrders();
+}
+
+async function placeSL(tok,acct,sid,price,vol,side,label) {
+  const r = await apiPost('/OrderStopLimit/Set',{tradeAccount:acct,securityId:sid,price,volume:vol,side},tok);
+  log('STP',r.data?'OK':'ERR',`${label} @ ${price}: ${r.message||''}`);
+  return r;
+}
+function logOrdResp(r,type) { r.data ? log('ORDER','OK',`${type} OK: ${r.message||''}`) : log('ORDER','ERR',`${type} ERR: ${r.message||''}`); }
+async function apiPost(path,body,tok) {
+  const r = await fetch(`${API}${path}`,{method:'POST',headers:hdrs(tok),body:JSON.stringify(body)});
+  const txt = await r.text();
+  try{return JSON.parse(txt);}catch{return{data:r.ok,message:txt};}
+}
+
+// ─── 1-CLICK ─────────────────────────────────────────────────────
+async function oneClickBuy() {
+  if (!selInst || !curAsk) { log('OC','WRN','Нет цены'); return; }
+  const tok = await getToken(); if (!tok) return;
+  const vol = quickVol || parseInt(el('ord-vol').value)||1;
+  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price:Math.round(curAsk),volume:vol,side:0},tok);
+  logOrdResp(r,'1-CLICK BUY'); loadOrders();
+}
+async function oneClickSell() {
+  if (!selInst || !curBid) { log('OC','WRN','Нет цены'); return; }
+  const tok = await getToken(); if (!tok) return;
+  const vol = quickVol || parseInt(el('ord-vol').value)||1;
+  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price:Math.round(curBid),volume:vol,side:1},tok);
+  logOrdResp(r,'1-CLICK SELL'); loadOrders();
+}
+async function closePos() {
+  if (!selInst) { log('CLOSE','WRN','Нет инструмента'); return; }
+  const tok = await getToken(); if (!tok) return;
+  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price:Math.round(curBid),volume:quickVol||1,side:1},tok);
+  log('CLOSE',r.data?'OK':'ERR',`SELL @ ${Math.round(curBid)}: ${r.message||''}`);
+}
+async function cancelAllSL() {
+  if (!selInst) return;
+  const tok = await getToken(); if (!tok) return;
+  const r = await fetch(`${API}/OrderStopLimit/DelById/${getAcct()}/${selInst.id}`,{method:'DELETE',headers:hdrs(tok)});
+  const d = await r.json();
+  log('CANCEL',d.data?'OK':'WRN',d.message||'Cancelled all'); loadOrders();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ORDERS
+// ════════════════════════════════════════════════════════════════════
+async function loadOrders() {
+  if (!selInst) { renderOrders([]); return; }
+  const tok = await getToken(); if (!tok) return;
+  try {
+    const r = await fetch(`${API}/OrderStopLimit/GetByTradeAccountBySecId/${getAcct()}/${selInst.id}`,{headers:hdrs(tok)});
+    const d = await r.json();
+    const list = Array.isArray(d.data)?d.data:(Array.isArray(d)?d:[]);
+    renderOrders(list);
+  } catch { renderOrders([]); }
+}
+function renderOrders(list) {
+  setText('sl-n', list.length);
+  const box = el('ao');
+  if (!list.length) { box.innerHTML='<div class="note">Нет активных стоп-заявок</div>'; return; }
+  box.innerHTML = list.map(o => {
+    const sc = o.side===0?'g':'r';
+    return `<div class="ord-row"><span class="obadge STP">STP</span><span style="color:var(--${sc});font-weight:700;">${o.side===0?'▲B':'▼S'}</span><span>${o.secIsin||'—'}</span><span style="font-weight:700;font-family:var(--FM);">${(o.price||0).toLocaleString('ru-RU')}</span><span style="color:var(--Tm);">×${o.volume||1}</span><span class="ocx" onclick="cancelOrder('${o.id}')">✕</span></div>`;
+  }).join('');
+}
+async function cancelOrder(id) {
+  const tok = await getToken(); if (!tok) return;
+  const r = await fetch(`${API}/OrderStopLimit/DelById/${id}`,{method:'DELETE',headers:hdrs(tok)});
+  const d = await r.json(); log('CANCEL',d.data?'OK':'WRN',d.message||''); loadOrders();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TAPE (Time & Sales)
+// ════════════════════════════════════════════════════════════════════
+function addTrade(t) {
+  if (!t) return;
+  const feed = el('tfeed');
+  if (feed.querySelector('.note')) feed.innerHTML = '';
+  const time = t.t ? new Date(t.t).toLocaleTimeString('ru-RU') : '--:--';
+  const isBuy = t.d===0;
+  const price = (t.p||0) > 1000 ? t.p/100 : (t.p||0);
+  const row = document.createElement('div');
+  row.className = 'tr2 '+(isBuy?'buy':'sell');
+  row.innerHTML = `<span class="ttime">${time}</span><span class="tinst">${t.sn||'—'}</span><span class="tdir ${isBuy?'b':'s'}">${isBuy?'BUY':'SELL'}</span><span class="tprice">${price.toFixed(2)}</span><span class="tvol" style="text-align:right;">×${t.v||1}</span>`;
+  feed.insertBefore(row, feed.firstChild);
+  while (feed.children.length > 80) feed.removeChild(feed.lastChild);
+  tcN++; setText('tc-n', tcN);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// EVENTS
+// ════════════════════════════════════════════════════════════════════
+function addEvent(e) {
+  const tb=el('eb');
+  const tr=document.createElement('tr'); tr.className='fl';
+  const ts=new Date(e.timestamp||Date.now()).toLocaleTimeString('ru-RU');
+  const type=e.event_type||'?', cls=classEv(type);
+  tr.innerHTML=`<td class="ets">${ts}</td><td><span class="etb ${cls}">${type}</span></td><td class="etd">${e.description||''}</td>`;
+  tb.insertBefore(tr, tb.firstChild);
+  while(tb.rows.length>100) tb.deleteRow(tb.rows.length-1);
+  evN++; setText('ev-n',evN);
+}
+function classEv(t) {
+  if(t.includes('AUTH'))return'AUTH'; if(t.includes('ORDER')||t.includes('STOP'))return'ORD';
+  if(t.includes('ERROR')||t.includes('FAIL'))return'ERR'; if(t.includes('POSITION'))return'POS';
+  if(t.includes('TP'))return'TP'; if(t.includes('SL'))return'SL';
+  if(t.includes('SIGN')||t.includes('SOCK'))return'SIG'; return'INFO';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// STATE / PROGRESS / SPARKLINE
+// ════════════════════════════════════════════════════════════════════
+function setState(s) { setText('sv',s||'INIT'); const e=el('sv'); if(e) e.className='sv '+(s||'INIT'); setText('tb-st',s||'OFFLINE'); }
+function setDot(type) { const d=el('dot'); if(d) d.className='dot '+(type||''); }
+function updateProgress(bid,entry,tp,sl) {
+  if(!sl||!tp||!bid)return; const rng=tp-sl; if(rng<=0)return;
+  const pos=Math.max(0,Math.min(100,((bid-sl)/rng)*100));
+  el('pgc').style.left=pos+'%'; el('pgf').style.width=pos+'%';
+  el('pgf').style.background=pos>60?'var(--G)':pos<40?'var(--R)':'var(--Y)';
+}
+function drawSpk() {
+  const c=el('spkc'); if(!c||priceHist.length<2)return;
+  const ctx=c.getContext('2d'), DPR=devicePixelRatio||1;
+  c.width=c.offsetWidth*DPR; c.height=42*DPR;
+  ctx.scale(DPR,DPR); const W=c.offsetWidth,H=42;
+  ctx.clearRect(0,0,W,H);
+  const mn=Math.min(...priceHist),mx=Math.max(...priceHist),rng=mx-mn||1;
+  const pts=priceHist.map((p,i)=>[(i/(priceHist.length-1))*W,H-((p-mn)/rng)*(H-4)-2]);
+  ctx.beginPath(); ctx.moveTo(pts[0][0],H);
+  pts.forEach(([x,y])=>ctx.lineTo(x,y));
+  ctx.lineTo(pts[pts.length-1][0],H); ctx.closePath();
+  const C=getThemeColors();
+  ctx.fillStyle=C.isDark?'rgba(61,142,255,.08)':'rgba(26,95,204,.07)'; ctx.fill();
+  ctx.beginPath(); pts.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
+  ctx.strokeStyle=C.G; ctx.lineWidth=1.5; ctx.stroke();
+  const[lx,ly]=pts[pts.length-1];
+  ctx.beginPath(); ctx.arc(lx,ly,2.5,0,Math.PI*2); ctx.fillStyle=C.G; ctx.fill();
+}
+function drawRtBars() {
+  const max=Math.max(...rtHist,1);
+  ['rb0','rb1','rb2'].forEach((id,i)=>{
+    const b=el(id); if(b){ b.style.height=Math.max(2,Math.round((rtHist[i]/max)*16))+'px'; b.classList.toggle('hi',i===2); }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AUTO-TRADE (Flask backend)
+// ════════════════════════════════════════════════════════════════════
+function autoStart() {
+  const cfg={ticker:el('cfg-tk').value.trim()||'SBER',volume:parseInt(el('cfg-vol').value)||1,
+    tp_percent:parseFloat(el('cfg-tp').value)||0.5,sl_percent:parseFloat(el('cfg-sl').value)||0.5,
+    max_monitor_minutes:parseInt(el('cfg-mon').value)||120};
+  log('AUTO','INF',`Launch: ${cfg.ticker} vol=${cfg.volume}`);
+  fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)})
+    .then(r=>r.json()).then(d=>{
+      if(d.status==='started'){log('AUTO','OK',`Started`); el('b-launch').disabled=true; el('b-stop').disabled=false; setDot('pulse');}
+      else log('AUTO','ERR',d.error||'Error');
+    }).catch(e=>log('AUTO','ERR',e.message));
+}
+function autoStop() {
+  fetch('/api/stop',{method:'POST'}).then(r=>r.json()).then(()=>{
+    log('AUTO','WRN','Stopped'); el('b-launch').disabled=false; el('b-stop').disabled=true; setDot('on');
+  }).catch(e=>log('AUTO','ERR',e.message));
+}
+function loadFlaskStatus() {
+  fetch('/api/status').then(r=>r.json()).then(d=>{if(d.trade)fromTrade(d.trade);}).catch(()=>{});
+}
+function onFlaskUpdate(u) {
+  if(!u) return;
+  const t=u.event_type, d=u.data||{};
+  if(t==='event')         {log(d.event_type||'EVT','INF',d.description||'');addEvent(d);}
+  if(t==='price_tick')    {if(d.mid&&d.mid>0)onTick(d.mid,1,0);}
+  if(t==='state_changed') {setState(d.state);log('STATE','INF',`${d.old_state||'?'}→${d.state}`);}
+  if(t==='levels_calculated'){fromLevels(d);}
+  if(t==='pnl_calculated')   {fromPnL(d);}
+  if(t==='pnl_comparison')   {fromComparison(d);}
+  if(t==='trade_completed')  {if(d)fromTrade(d);setDot('on');el('b-launch').disabled=false;el('b-stop').disabled=true;}
+}
+function fromTrade(t) {
+  if(!t)return;
+  if(t.state) setState(t.state);
+  if(t.entry_price>0){entryPrice=t.entry_price;setText('k-en',fmtP(t.entry_price));setText('l-en',fmtP(t.entry_price));}
+  if(t.tp_price>0)   {tpPrice=t.tp_price;setText('k-tp',fmtP(t.tp_price));setText('l-tp',fmtP(t.tp_price));setText('a-tp',fmtP(t.tp_price)+' ₽');}
+  if(t.sl_price>0)   {slPrice=t.sl_price;setText('k-sl',fmtP(t.sl_price));setText('l-sl',fmtP(t.sl_price));setText('a-sl',fmtP(t.sl_price)+' ₽');}
+  if(t.exit_price>0) setText('a-ex',fmtP(t.exit_price)+' ₽');
+  if(t.exit_reason)  setText('a-rea',t.exit_reason);
+  if(t.pnl_rub!==undefined) fromPnL({pnl_rub:t.pnl_rub,pnl_percent:t.pnl_percent,pnl_net:t.pnl_net,commission:t.commission,duration_seconds:t.duration_seconds});
+  if(t.price_history?.length){priceHist=t.price_history.map(p=>p.mid||0).filter(v=>v>0);drawSpk();}
+  if(t.events?.length){el('eb').innerHTML='';t.events.forEach(e=>addEvent(e));}
+  scheduleChartDraw();
+}
+function fromLevels(d) {
+  if(d.entry_price){entryPrice=d.entry_price;setText('k-en',fmtP(d.entry_price));setText('l-en',fmtP(d.entry_price));}
+  if(d.tp_price){tpPrice=d.tp_price;setText('k-tp',fmtP(d.tp_price));setText('l-tp',fmtP(d.tp_price));}
+  if(d.sl_price){slPrice=d.sl_price;setText('k-sl',fmtP(d.sl_price));setText('l-sl',fmtP(d.sl_price));}
+  updateProgress(curBid,d.entry_price,d.tp_price,d.sl_price);
+  scheduleChartDraw();
+}
+function fromPnL(d) {
+  const rub=d.pnl_rub||0,net=d.pnl_net!==undefined?d.pnl_net:rub,com=d.commission||0;
+  setTextCls('k-pnl',(rub>=0?'+':'')+fmtP(rub)+' ₽','kv '+(rub>0?'g':rub<0?'r':''));
+  setTextCls('a-pnl',(rub>=0?'+':'')+fmtP(rub)+' ₽','av '+(rub>0?'g':rub<0?'r':''));
+  setTextCls('a-net',(net>=0?'+':'')+fmtP(net)+' ₽','av '+(net>0?'g':net<0?'r':''));
+  setText('a-com',com>0?'−'+fmtP(com)+' ₽':'—');
+  if(d.duration_seconds>0){const m=Math.floor(d.duration_seconds/60),s=Math.floor(d.duration_seconds%60);setText('k-dur',m>0?`${m}m${s}s`:`${s}s`);}
+}
+function fromComparison(d) {
+  if(!d)return;
+  log('MATCH',d.entry_match?'OK':'WRN',`Entry: ${d.real_entry_price} ${d.entry_match?'✓':'≠'}`);
+  log('MATCH',d.exit_match?'OK':'WRN',`Exit: ${d.real_exit_price} ${d.exit_match?'✓':'≠'}`);
+  if(d.commission>0) log('COMM','INF',`Комиссия: -${fmtP(d.commission)} ₽ | Net: ${fmtP(d.net_pnl_rub)} ₽`);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CHART ENGINE — профессиональный скальперский график
+// ════════════════════════════════════════════════════════════════════
+let chartRafId = null;
+
+function scheduleChartDraw() {
+  if (chartRafId) return;
+  chartRafId = requestAnimationFrame(() => { chartRafId=null; drawChart(); });
+}
+
+function setChartType(t,btn) {
+  chartType=t; document.querySelectorAll('.ct[id^="ct-"]').forEach(b=>b.classList.remove('act')); btn.classList.add('act'); scheduleChartDraw();
+}
+function setTF(m,btn) {
+  chartTF=m; document.querySelectorAll('.ct[id^="ctf-"]').forEach(b=>b.classList.remove('act')); btn.classList.add('act');
+  if (m!=='T' && (!realCandles[String(m)]||realCandles[String(m)].length===0)) {
+    // Пересобираем тиковые свечи
+    tickCandles=[]; tickCurCandle=null;
+    allTicks.forEach(tk=>buildTickCandle(tk.t,tk.p,tk.v,tk.s));
+  }
+  scheduleChartDraw();
+}
+function toggleChartOverlay(name,btn) {
+  chartOverlays[name] = !chartOverlays[name];
+  btn.classList.toggle('act', chartOverlays[name]);
+  scheduleChartDraw();
+}
+
+function getVisibleCandles() {
+  const tfKey = chartTF === 'T' ? 'T' : String(chartTF);
+  const real = realCandles[tfKey];
+  if (real && real.length >= 2) { chartDataSource='cluster'; return real; }
+  const tick = chartTF === 'T' ? tickCandles : tickCandles;
+  const all = [...tick]; if(tickCurCandle) all.push({...tickCurCandle});
+  if (all.length >= 2) { chartDataSource='ticks'; return all; }
+  chartDataSource='demo';
+  return genDemoCandles();
+}
+
+function genDemoCandles() {
+  if (!genDemoCandles._cache || genDemoCandles._tf !== chartTF) {
+    const res=[]; let p = 190 + Math.random()*20;
+    const now=Date.now(), tf=chartTF==='T'?30000:chartTF*60000;
+    for(let i=59;i>=0;i--){
+      const t=Math.floor((now-i*tf)/tf)*tf;
+      const o=p,move=(Math.random()-.48)*p*.004,c=Math.max(1,p+move);
+      const h=Math.max(o,c)+Math.random()*p*.0015,l=Math.min(o,c)-Math.random()*p*.0015;
+      const v=Math.floor(Math.random()*500+100),bv=Math.floor(v*(.4+Math.random()*.2));
+      res.push({t,o,h:Math.max(h,o,c),l:Math.min(l,o,c),c,v,bv,sv:v-bv,cd:bv-(v-bv)});
+      p=c;
+    }
+    genDemoCandles._cache=res; genDemoCandles._tf=chartTF;
+  }
+  return genDemoCandles._cache;
+}
+
+function drawChart() {
+  const cv = el('chartc'); if(!cv) return;
+  const DPR = window.devicePixelRatio||1;
+  cv.width  = cv.offsetWidth  * DPR;
+  cv.height = cv.offsetHeight * DPR;
+  const ctx = cv.getContext('2d');
+  ctx.scale(DPR, DPR);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+  const C = getThemeColors();
+
+  ctx.fillStyle = C.bg0; ctx.fillRect(0,0,W,H);
+
+  const allC = getVisibleCandles();
+  const PL=8, PR=58, PT=10, PB=chartOverlays.vol?38:22;
+  const CW=W-PL-PR, CH=H-PT-PB;
+
+  // Ширина свечи
+  const CAND_W = Math.max(1, Math.min(16, Math.floor(CW / Math.max(allC.length,1)) - 1));
+  const maxVis  = Math.floor(CW / Math.max(CAND_W+1, 2));
+  const startIdx= Math.max(0, allC.length - maxVis - chartScrollOffset);
+  const vis     = allC.slice(startIdx, startIdx + maxVis);
+  if (!vis.length) return;
+
+  const gap = Math.max(CAND_W+1, Math.floor(CW / vis.length));
+
+  // Диапазон цен
+  const prices = vis.flatMap(c=>[c.h,c.l]);
+  const maxP = Math.max(...prices), minP = Math.min(...prices);
+  const rng  = maxP - minP || maxP * .001;
+  const pad  = rng * .06;
+  const yHi  = maxP + pad, yLo = minP - pad, yRng = yHi - yLo;
+  function py(p) { return PT + CH - ((p-yLo)/yRng)*CH; }
+
+  // ── GRID ──────────────────────────────────────────────────────
+  const GRID_STEPS = 5;
+  ctx.setLineDash([2,4]);
+  ctx.strokeStyle=C.bdr; ctx.lineWidth=0.4;
+  for (let i=0; i<=GRID_STEPS; i++) {
+    const p = yLo + (yRng/GRID_STEPS)*i;
+    const y = py(p);
+    ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(W-PR,y); ctx.stroke();
+    ctx.fillStyle=C.Tm; ctx.font='8px Roboto Mono,monospace'; ctx.textAlign='left';
+    ctx.fillText(p.toFixed(p>100?2:4), W-PR+4, y+3);
+  }
+  ctx.setLineDash([]);
+
+  // ── TIME AXIS ─────────────────────────────────────────────────
+  ctx.fillStyle=C.Td; ctx.font='7px Roboto Mono,monospace'; ctx.textAlign='center';
+  const tStep = Math.max(1, Math.floor(vis.length/6));
+  vis.forEach((c,i) => {
+    if (i%tStep===0) {
+      const x = PL + i*gap + gap/2;
+      const d = new Date(c.t);
+      const lbl = chartTF==='T' ? d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+                                 : d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+      ctx.fillText(lbl, x, H-PB+13);
+    }
+  });
+
+  // ── УРОВНИ ПОЗИЦИИ (entry/TP/SL) ──────────────────────────────
+  if (chartOverlays.levels) {
+    function drawLevel(price, color, label) {
+      if (!price || price <= 0) return;
+      const y = py(price);
+      if (y < PT || y > PT+CH) return;
+      ctx.save();
+      ctx.strokeStyle=color; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(W-PR,y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=color; ctx.font='bold 8px Roboto Mono,monospace'; ctx.textAlign='left';
+      ctx.fillRect(W-PR+1, y-8, PR-2, 12);
+      ctx.fillStyle=C.bg0; ctx.fillText(label, W-PR+3, y+2);
+      ctx.restore();
+    }
+    if (entryPrice>0) drawLevel(entryPrice, C.Y, 'ENTRY');
+    if (tpPrice>0)    drawLevel(tpPrice, C.G, 'TP');
+    if (slPrice>0)    drawLevel(slPrice, C.R, 'SL');
+  }
+
+  // ── CURRENT PRICE LINE ─────────────────────────────────────────
+  const lastP = allC[allC.length-1]?.c;
+  if (lastP) {
+    const y = py(lastP);
+    if (y>=PT && y<=PT+CH) {
+      ctx.save();
+      ctx.strokeStyle=C.G; ctx.lineWidth=0.6; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(W-PR,y); ctx.stroke();
+      ctx.setLineDash([]);
+      // Price tag on Y axis
+      ctx.fillStyle=C.G; ctx.fillRect(W-PR,y-7,PR-1,13);
+      ctx.fillStyle=C.bg0; ctx.font='bold 8px Roboto Mono,monospace'; ctx.textAlign='left';
+      ctx.fillText(fmtP(lastP), W-PR+3, y+3);
+      ctx.restore();
+    }
+  }
+
+  // ── VOLUME BARS ───────────────────────────────────────────────
+  if (chartOverlays.vol) {
+    const maxV = Math.max(...vis.map(c=>c.v||0),1);
+    const volZone = PB - 20;
+    vis.forEach((c,i) => {
+      const x = PL + i*gap + gap/2;
+      const vH = Math.max(1, ((c.v||0)/maxV)*volZone);
+      const isUp = c.c>=c.o;
+      ctx.fillStyle = isUp ? (C.isDark?'rgba(61,142,255,.25)':'rgba(26,95,204,.2)') : (C.isDark?'rgba(224,80,80,.25)':'rgba(204,42,42,.2)');
+      ctx.fillRect(x - Math.max(1,CAND_W/2), H-PB+2, Math.max(1,CAND_W), vH);
+    });
+  }
+
+  // ── DELTA HISTOGRAM ──────────────────────────────────────────
+  if (chartOverlays.delta) {
+    const maxD = Math.max(...vis.map(c=>Math.abs(c.cd||0)),1);
+    const dZone = 14;
+    vis.forEach((c,i) => {
+      if (!c.cd) return;
+      const x = PL + i*gap + gap/2;
+      const dH = Math.max(1, (Math.abs(c.cd)/maxD)*dZone);
+      ctx.fillStyle = c.cd>=0 ? (C.isDark?'rgba(61,142,255,.5)':'rgba(26,95,204,.45)') : (C.isDark?'rgba(224,80,80,.5)':'rgba(204,42,42,.45)');
+      ctx.fillRect(x-Math.max(1,CAND_W/2), PT+CH-dH+2, Math.max(1,CAND_W), dH);
+    });
+  }
+
+  // ── СВЕЧИ / БАРЫ / ЛИНИЯ ──────────────────────────────────────
+  if (chartType === 'line') {
+    ctx.beginPath();
+    vis.forEach((c,i)=>{ const x=PL+i*gap+gap/2,y=py(c.c); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.strokeStyle=C.G; ctx.lineWidth=1.5; ctx.stroke();
+    // Fill
+    const lastX = PL+(vis.length-1)*gap+gap/2;
+    ctx.lineTo(lastX,PT+CH); ctx.lineTo(PL,PT+CH); ctx.closePath();
+    ctx.fillStyle=C.isDark?'rgba(61,142,255,.06)':'rgba(26,95,204,.06)'; ctx.fill();
+
+  } else {
+    const bull = C.isDark?'#3D8EFF':'#1A5FCC';
+    const bear = C.isDark?'#E05050':'#CC2A2A';
+
+    vis.forEach((c,i) => {
+      const x = PL + i*gap + gap/2;
+      const isUp = c.c >= c.o;
+      const col = isUp ? bull : bear;
+      const bW = Math.max(2, CAND_W);
+
+      // Подсветка свечи под курсором
+      if (i === chartMouseIdx) {
+        ctx.fillStyle = C.isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
+        ctx.fillRect(x-bW/2-1, PT, bW+2, CH);
+      }
+
+      // Фитиль
+      ctx.strokeStyle=col; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x,py(c.h)); ctx.lineTo(x,py(c.l)); ctx.stroke();
+
+      if (chartType==='candle') {
+        const y1=py(Math.max(c.o,c.c)), y2=py(Math.min(c.o,c.c));
+        const bH=Math.max(1, y2-y1);
+        ctx.fillStyle = isUp
+          ? (C.isDark?'rgba(61,142,255,.82)':'rgba(26,95,204,.82)')
+          : (C.isDark?'rgba(224,80,80,.82)':'rgba(204,42,42,.82)');
+        ctx.fillRect(x-bW/2, y1, bW, bH);
+        ctx.strokeStyle=col; ctx.lineWidth=0.5; ctx.strokeRect(x-bW/2,y1,bW,bH);
+      } else {
+        // OHLC Bar
+        ctx.strokeStyle=col; ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.moveTo(x-bW/2,py(c.o)); ctx.lineTo(x,py(c.o)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x,py(c.c)); ctx.lineTo(x+bW/2,py(c.c)); ctx.stroke();
+      }
+    });
+  }
+
+  // ── CROSSHAIR + TOOLTIP ───────────────────────────────────────
+  if (chartMouseIdx >= 0 && chartMouseIdx < vis.length) {
+    const c = vis[chartMouseIdx];
+    const x = PL + chartMouseIdx*gap + gap/2;
+    const yc = py(c.c);
+    ctx.strokeStyle=C.Tm; ctx.lineWidth=0.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(x,PT); ctx.lineTo(x,PT+CH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(PL,yc); ctx.lineTo(W-PR,yc); ctx.stroke();
+    ctx.setLineDash([]);
+    // Price tag crosshair
+    ctx.fillStyle=C.Tm; ctx.fillRect(W-PR,yc-6,PR-2,11);
+    ctx.fillStyle=C.bg0; ctx.font='7.5px Roboto Mono,monospace'; ctx.textAlign='left';
+    ctx.fillText(fmtP(c.c), W-PR+3, yc+3);
+  }
+
+  // ── DATA SOURCE LABEL ─────────────────────────────────────────
+  ctx.font='8px Roboto Mono,monospace'; ctx.textAlign='right';
+  if (chartDataSource==='cluster') { ctx.fillStyle=C.G; ctx.fillText('● LIVE CLUSTER', W-PR-4, PT+11); }
+  else if (chartDataSource==='ticks') { ctx.fillStyle=C.Y; ctx.fillText('● LIVE TICKS', W-PR-4, PT+11); }
+  else { ctx.fillStyle=C.Td; ctx.fillText('DEMO DATA', W-PR-4, PT+11); }
+}
+
+// ── Chart mouse events ────────────────────────────────────────────
+(function initChartEvents() {
+  const cv = el('chartc'); if (!cv) return;
+  cv.addEventListener('mousemove', e => {
+    const r = cv.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (cv.offsetWidth / r.width);
+    const allC = getVisibleCandles();
+    const PL=8, PR=58, CW=cv.offsetWidth-PL-PR;
+    const CAND_W = Math.max(1, Math.min(16, Math.floor(CW / Math.max(allC.length,1)) - 1));
+    const maxVis = Math.floor(CW / Math.max(CAND_W+1,2));
+    const vis = allC.slice(Math.max(0, allC.length-maxVis));
+    const gap = Math.max(CAND_W+1, Math.floor(CW/vis.length));
+    chartMouseIdx = Math.floor((mx - PL) / gap);
+    if (chartMouseIdx < 0 || chartMouseIdx >= vis.length) { chartMouseIdx=-1; el('chart-tip').classList.remove('vis'); }
+    else {
+      const c = vis[chartMouseIdx];
+      const tip = el('chart-tip');
+      const dt = new Date(c.t).toLocaleString('ru-RU',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      tip.innerHTML = `${dt}  O:<b>${fmtP(c.o)}</b>  H:<b>${fmtP(c.h)}</b>  L:<b>${fmtP(c.l)}</b>  C:<b>${fmtP(c.c)}</b>  V:<b>${(c.v||0).toFixed(0)}</b>${c.cd!==undefined?'  Δ:<b style="color:'+(c.cd>=0?'var(--G)':'var(--R)')+'">'+Math.round(c.cd)+'</b>':''}`;
+      tip.classList.add('vis');
+    }
+    scheduleChartDraw();
+  });
+  cv.addEventListener('mouseleave', () => { chartMouseIdx=-1; el('chart-tip').classList.remove('vis'); scheduleChartDraw(); });
+  cv.addEventListener('wheel', e => {
+    e.preventDefault();
+    chartScrollOffset = Math.max(0, chartScrollOffset + (e.deltaY>0?-3:3));
+    scheduleChartDraw();
+  }, {passive:false});
+  // Клик на график → ставим цену в поле
+  cv.addEventListener('click', e => {
+    const r = cv.getBoundingClientRect();
+    const my = (e.clientY - r.top) * (cv.offsetHeight / r.height);
+    const allC = getVisibleCandles();
+    if (!allC.length) return;
+    const PL=8, PR=58, PT=10;
+    const prices=allC.flatMap(c=>[c.h,c.l]);
+    const maxP=Math.max(...prices),minP=Math.min(...prices),rng=maxP-minP||maxP*.001,pad=rng*.06;
+    const yHi=maxP+pad,yLo=minP-pad,yRng=yHi-yLo;
+    const H=cv.offsetHeight;
+    const PB=chartOverlays.vol?38:22,CH=H-PT-PB;
+    const price = yHi - ((my - PT) / CH) * yRng;
+    if (price>0) { el('ord-pr').value=Math.round(price); recalc(); log('CHART','INF',`Цена из графика: ${fmtP(price)}`); }
+  });
+  window.addEventListener('resize', scheduleChartDraw);
+  scheduleChartDraw();
+})();
+
+// ════════════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  switch(e.key.toUpperCase()) {
+    case 'B': e.preventDefault(); oneClickBuy();  break;
+    case 'S': e.preventDefault(); oneClickSell(); break;
+    case 'X': e.preventDefault(); cancelAllSL();  break;
+    case 'C': e.preventDefault(); closePos();     break;
+    case 'ARROWUP':   e.preventDefault(); { const v=el('ord-vol');v.value=parseInt(v.value||1)+1;recalc(); } break;
+    case 'ARROWDOWN': e.preventDefault(); { const v=el('ord-vol');v.value=Math.max(1,parseInt(v.value||1)-1);recalc(); } break;
+    case '1': setQVol(1,  el('qv1')); break;
+    case '2': setQVol(2,  el('qv2')); break;
+    case '5': setQVol(5,  el('qv5')); break;
+    case '0': setQVol(10, el('qv10')); break;
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// LOG
+// ════════════════════════════════════════════════════════════════════
+function log(tag, level, msg) {
+  const sc = el('ls');
+  const d = document.createElement('div'); d.className = 'll';
+  const ts = new Date().toLocaleTimeString('ru-RU');
+  const lv = level==='ERR'?'ERR':level==='WRN'?'WRN':level==='OK'?'OK':'INF';
+  const mc = level==='ERR'?'r':level==='WRN'?'w':level==='OK'?'g':'';
+  d.innerHTML = `<span class="lts">${ts}</span><span class="llv ${lv}">[${lv}]</span><span class="lm ${mc}">${tag}: ${msg}</span>`;
+  sc.appendChild(d);
+  logN++; setText('log-n', logN);
+  while(sc.children.length>400) sc.removeChild(sc.firstChild);
+  if (autoScroll) sc.scrollTop = sc.scrollHeight;
+}
+function clearLog() { el('ls').innerHTML=''; logN=0; setText('log-n',0); log('SYS','INF','Log cleared'); }
+function toggleAS() { autoScroll=!autoScroll; el('bas').style.color=autoScroll?'var(--G)':'var(--Tm)'; }
+
+// ════════════════════════════════════════════════════════════════════
+// HELPERS — без reflow-хаков, быстрые
+// ════════════════════════════════════════════════════════════════════
+function el(id) { return document.getElementById(id); }
+function setText(id, val) {
+  const e = el(id); if (!e || e.textContent === String(val)) return;
+  e.textContent = val;
+}
+function setTextCls(id, val, cls) {
+  const e = el(id); if (!e) return;
+  if (e.textContent !== String(val)) e.textContent = val;
+  if (e.className !== cls) e.className = cls;
+}
+function fmtP(n) { return parseFloat(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function r2(n)   { return parseFloat(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+['cfg-tp','cfg-sl','ord-vol','tp-v','sl-v','ord-pr'].forEach(id=>{
+  const e=el(id); if(e) e.addEventListener('input', recalc);
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ПЕРИОДИЧЕСКИЕ ЗАДАЧИ
+// ════════════════════════════════════════════════════════════════════
+setInterval(() => { if (selInst) loadPricesBatch([selInst]); }, 5000);
+setInterval(loadOrders, 15000);
+setInterval(loadFlaskStatus, 3000);
+setInterval(() => { genDemoCandles._cache=null; }, 60000); // обновляем демо каждую минуту
+
+// ════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════
+log('SYS','INF','CASSANDRA · HERMES v11 SCALPER PRO starting...');
+log('SYS','INF','API: ' + API);
+log('SYS','INF','Hotkeys: B=Buy S=Sell X=CancelAll C=Close ↑↓=Volume 1/2/5/0=Lot');
+loadAccounts();
+loadInst();
+recalc();
+
+setTimeout(async () => {
+  await connectSignalR();
+  setDot('on');
+  log('SIG','OK','Global hubs connected');
+}, 600);
+</script>
+</body>
+</html>

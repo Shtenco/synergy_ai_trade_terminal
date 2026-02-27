@@ -1,0 +1,328 @@
+ПРИНЯТО.
+Ниже — единый, цельный, системный документ.
+Не чат. Не идеи россыпью.
+А АРХИТЕКТУРА ТОПОВОГО AI-ТЕРМИНАЛА ДЛЯ СКАЛЬПИНГА (уровень prop / 2026+).
+
+Я записал и расширил ВСЕ идеи из чата, связал их логически и довёл до инженерно-архитектурной целостности.
+
+🧠 AI MICROSTRUCTURE SCALPING TERMINAL
+(Unified Architecture v1.0)
+🎯 ЦЕЛЬ СИСТЕМЫ
+
+Создать интеллектуальную торговую платформу, которая:
+
+работает на уровне микроструктуры
+
+анализирует намерения участников, а не индикаторы
+
+даёт edge на горизонте 0.2–15 секунд
+
+масштабируется от ручного инструмента до полностью автономного AI
+
+🧩 ОБЩАЯ КОНЦЕПЦИЯ (CORE IDEA)
+
+Цена — следствие.
+Причина — ликвидность, очередь, агрессия, время жизни ордеров, задержка.
+
+Система НЕ прогнозирует цену.
+Она прогнозирует:
+
+дисбаланс
+
+поглощение
+
+вероятность импульса
+
+риск исполнения
+
+🏗 ЕДИНАЯ АРХИТЕКТУРА (СВЕРХУРОВНЕВО)
+┌─────────────────────────────────────────────┐
+│                  UI / UX                    │
+│  Smart DOM · Heatmaps · Control Panels      │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│            Decision Orchestration            │
+│  (A: Human | B: LLM Assist | C: Autonomous) │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│            ML / AI Micro Core                │
+│  (Microstructure Models + RL + LLM)          │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│        Feature & Market State Engine         │
+│  (200–1000 micro-features / 10–50 ms)        │
+└─────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────┐
+│        Market Data + Execution Layer         │
+│  (Tick → Order Book → Orders)                │
+└─────────────────────────────────────────────┘
+⚙️ LAYER 1 — MARKET DATA & EXECUTION (LOW LATENCY)
+
+Язык: C++ / Rust
+Цель: минимальная задержка, детерминизм
+
+Market Data:
+
+Tick-by-tick
+
+Полный L2 стакан
+
+FAST / FIX / WebSocket
+
+Наносекундные таймстемпы
+
+Реконструкция очереди
+
+Execution Engine:
+
+Passive / Aggressive routing
+
+Cancel/Replace с учётом очереди
+
+Iceberg slicing
+
+Queue priority simulation
+
+Slippage estimator
+
+Kill-switch
+
+🧮 LAYER 2 — FEATURE EXTRACTION ENGINE
+
+Обновление каждые 10–50 мс
+
+Классы признаков:
+📘 Стакан:
+
+Order Book Imbalance
+
+Depth Pressure
+
+Spread Expansion Rate
+
+Micro VWAP deviation
+
+⏱ Очередь:
+
+Queue position estimator
+
+Expected fill time
+
+Queue decay
+
+🔥 Поток:
+
+Aggressive buy/sell rate
+
+Trade clustering
+
+Absorption index
+
+👁 Манипуляции:
+
+Iceberg probability
+
+Spoof probability
+
+Fake liquidity score
+
+⚡ Волатильность:
+
+Volatility burst detector
+
+Micro ATR
+
+Regime change flags
+
+➡️ Итог: 200–1000 признаков в реальном времени
+
+🤖 LAYER 3 — AI / ML MICRO CORE
+Модельный ансамбль:
+
+LSTM / Transformer
+
+последовательности тиков
+
+XGBoost / CatBoost
+
+микроструктурные фичи
+
+Reinforcement Learning
+
+адаптация действий
+
+LLM Supervisor
+
+стратегическая логика
+
+Выходы моделей:
+
+P(up / down)
+
+Expected move (ticks)
+
+False breakout probability
+
+Liquidity trap score
+
+Execution risk
+
+Confidence level
+
+🅰 РЕЖИМ A — ИНСТРУМЕНТ ДЛЯ РУЧНОГО СКАЛЬПИНГА
+Smart DOM:
+
+Heatmap реальной ликвидности
+
+Цвета: real / iceberg / spoof
+
+Таймер жизни ордеров
+
+Absorption meter
+
+Pressure index (0–100)
+
+Decision Panel:
+
+Вероятности, не сигналы
+
+Рекомендованный тип действия
+
+Риск исполнения
+
+📌 Человек принимает решение
+AI — усиливает восприятие.
+
+🅱 РЕЖИМ B — ПОЛУАВТОМАТ + LLM
+Роль LLM:
+
+LLM НЕ торгует, она:
+
+проверяет логичность входа
+
+учитывает риск-профиль
+
+анализирует контекст дня
+
+контролирует психологию
+
+Полуавтомат умеет:
+
+выставлять лимитки
+
+динамически двигать стоп
+
+дробить выход
+
+управлять очередью
+
+снижать риск при перегрузе
+
+📌 Человек подтверждает
+AI исполняет оптимально.
+
+🅲 РЕЖИМ C — ПОЛНАЯ АВТОНОМНОСТЬ
+Multi-Agent система:
+
+Microstructure Agent — видит рынок
+
+Execution Agent — исполняет
+
+Risk Agent — ограничивает
+
+Regime Detector — определяет режим
+
+LLM Supervisor — стратегия и контроль
+
+Regime Detector:
+
+тренд
+
+флэт
+
+манипуляция
+
+новостной режим
+
+тонкий рынок
+
+📌 Стратегии переключаются автоматически
+
+🛡 RISK & PSYCHO CONTROL (КЛЮЧЕВО)
+
+Dynamic VaR
+
+Intraday DD limit
+
+Cooldown после серии убытков
+
+Авто-снижение лота
+
+Блокировка импульсивных входов
+
+AI контролирует не только рынок, но и трейдера.
+
+🧬 ДОПОЛНИТЕЛЬНЫЕ ТОП-ИДЕИ
+🔁 Self-Learning
+
+модель обучается на твоих действиях
+
+🌍 Cross-Market Scan
+
+корреляции MOEX ↔ крипта
+
+⚡ Latency Predictor
+
+прогноз ухудшения исполнения
+
+🧪 GPU Tick Simulator
+
+ускоренный forward-test
+
+🏗 ТЕХНОСТЕК (РЕАЛИСТИЧНО)
+
+Core / Execution: C++ / Rust
+
+ML: Python + PyTorch + ONNX
+
+UI: Qt + WebGL
+
+LLM: локальная (LLaMA-класс)
+
+Deployment: сервер рядом с биржей
+
+🆚 ЧЕМ ОН ВЫШЕ РЫНКА
+
+В отличие от:
+
+MetaQuotes
+
+ATAS
+
+TradingView
+
+👉 он работает с причиной, а не с отображением цены.
+
+🔥 ИТОГ
+
+Это не терминал.
+Это AI-операционная система для микроструктурного трейдинга.
+
+⏭ ЧТО ДЕЛАЕМ ДАЛЬШЕ?
+
+Я готов:
+
+Разложить MVP (3 месяца)
+
+Сделать диаграммы модулей
+
+Спроектировать конкретный стек под МОEX
+
+Написать ТЗ уровня prop-firm
+
+Скажи одно слово:
+MVP / DIAGRAM / MOEX / TЗ
