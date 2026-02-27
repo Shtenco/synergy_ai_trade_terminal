@@ -11,11 +11,11 @@ python MAIN.py
 ## Архитектура системы
 
 ```
-MAIN.py (центральный менеджер)
-├── DataCollector (сбор данных)
-├── TradeTester (торговля)
-├── DataHub (обмен данными)
-└── Dashboard (веб-интерфейс)
+MAIN.py (process supervisor v2)
+├── Config loader (config.json + defaults)
+├── DataCollector process (cassandra_ai_collector.py)
+├── TradeTester process (cassandra_v6_FIXED.py API server)
+└── Auto-restart monitor + graceful shutdown
 ```
 
 ## Компоненты
@@ -138,3 +138,18 @@ cassandra/
 ## Лицензия
 
 MIT License
+
+## Что улучшено в архитектуре (v2)
+
+- `MAIN.py` теперь выступает как supervisor: поднимает компоненты в отдельных процессах, следит за их состоянием и перезапускает при падении.
+- Конфиг централизован в dataclass `Config` с загрузкой из `config.json`.
+- Единый logger создаёт консольный и файловый канал для всех компонентов.
+- Добавлена безопасная остановка (`terminate` → `kill`) для исключения зависших процессов.
+
+
+## Dashboard v11+ (AI Supervisor + Executor)
+
+- Добавлены панели **AI-чат Supervisor** и **Робот-исполнитель + логи** над блоком 1-click.
+- 1-click BUY/SELL теперь исполняет вход и автоматически ставит TP/SL из текущих настроек.
+- Добавлен watchdog котировок с авто-переподключением инструментальных хабов при задержке потока.
+- Для OpenRouter/DeepSeek добавлен модуль `cassandra_deepseek_supervisor.py` и legacy-вход `запуск дипсика.py`.

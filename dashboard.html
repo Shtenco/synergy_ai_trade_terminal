@@ -328,6 +328,18 @@ canvas#spkc{width:100%;height:42px;display:block;}
 .oc-sell{border-color:var(--R);color:var(--R);background:var(--Rg);}
 .oc-sell:hover{background:rgba(224,80,80,.22);}
 
+
+/* AI / EXECUTOR */
+.ai-box,.exec-box{background:var(--bg2);border:1px solid var(--bdr);padding:6px;margin-bottom:6px;}
+.ai-log,.exec-log{max-height:110px;overflow-y:auto;background:var(--bg0);border:1px solid var(--bdr);padding:4px;font-size:8.5px;font-family:var(--FM);}
+.ai-row,.exec-row{display:grid;grid-template-columns:44px 1fr;gap:4px;padding:2px 0;border-bottom:1px solid rgba(30,40,60,.25);}
+.ai-role{color:var(--Y);font-weight:700;text-transform:uppercase;font-size:7px;}
+.exec-role{color:var(--C);font-weight:700;text-transform:uppercase;font-size:7px;}
+.ai-input{display:flex;gap:4px;margin-top:4px;}
+.ai-input .fi{flex:1;}
+.exec-controls{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}
+.exec-status{font-size:8px;color:var(--Tm);margin-top:3px;}
+
 /* MISC */
 @keyframes flash{from{background:rgba(61,142,255,.14);}to{background:transparent;}}
 .fl td{animation:flash .5s ease;}
@@ -482,9 +494,35 @@ canvas#spkc{width:100%;height:42px;display:block;}
     <span class="hk"><kbd>±</kbd>VOL</span>
   </div>
 
+  <!-- AI Chat Supervisor -->
+  <div class="sec">
+    <div class="sec-t">🧠 AI-ЧАТ SUPERVISOR (DEEPSEEK / OPENROUTER)</div>
+    <div class="ai-box">
+      <div class="ai-log" id="ai-log"></div>
+      <div class="ai-input">
+        <input class="fi" id="ai-msg" placeholder="Например: открой BUY 2 лота по рынку, TP 0.4%, SL 0.3%"/>
+        <button class="btn bg" onclick="sendAIInstruction()">ОТПРАВИТЬ</button>
+      </div>
+      <div class="exec-status" id="ai-status">AI: idle</div>
+    </div>
+  </div>
+
+  <!-- Executor Robot -->
+  <div class="sec">
+    <div class="sec-t">🤖 РОБОТ-ИСПОЛНИТЕЛЬ И ЛОГИ</div>
+    <div class="exec-box">
+      <div class="exec-controls">
+        <button class="btn bg" onclick="execArm(true)">ARM</button>
+        <button class="btn br" onclick="execArm(false)">DISARM</button>
+      </div>
+      <div class="exec-log" id="exec-log"></div>
+      <div class="exec-status" id="exec-status">Executor: DISARMED</div>
+    </div>
+  </div>
+
   <!-- 1-click BUY/SELL -->
   <div class="sec">
-    <div class="sec-t">⚡ 1-КЛИК СКАЛЬПЕРСКИЕ КНОПКИ</div>
+    <div class="sec-t">⚡ 1-КЛИК СКАЛЬПЕРСКИЕ КНОПКИ (моментальное исполнение)</div>
     <div class="oneclick-row">
       <div class="oc-btn oc-buy" onclick="oneClickBuy()">▲ BUY<br/><span style="font-size:10px;font-weight:400;" id="oc-bid-price">—</span></div>
       <div class="oc-btn oc-sell" onclick="oneClickSell()">▼ SELL<br/><span style="font-size:10px;font-weight:400;" id="oc-ask-price">—</span></div>
@@ -716,6 +754,8 @@ let domData = {asks:[], bids:[]};  // стакан
 let cumulativeDelta = 0;           // накопленная дельта
 let ticksPerSec = 0, tickCount = 0; // счётчик тиков
 let entryPrice = 0, tpPrice = 0, slPrice = 0; // уровни позиции
+let quoteWatchdogTs = 0;
+let executorArmed = false;
 
 // Chart state
 let chartType  = 'candle';
@@ -908,7 +948,7 @@ async function connectInstrumentHubs(secId) {
 
   // REST POLLING стакана каждые 2.5 сек
   if (quoteTimer) clearInterval(quoteTimer);
-  quoteTimer = setInterval(() => pollQuotes(secId), 2500);
+  quoteTimer = setInterval(() => pollQuotes(secId), 1000);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -956,6 +996,8 @@ function parseAndApplyQuote(inst, q) {
   domData.asks = parsedAsks.slice(0, 5);
   domData.bids = parsedBids.slice(0, 5);
   renderDOM();
+
+  quoteWatchdogTs = Date.now();
 
   // Если нет кластерных данных — строим из mid цены
   const hasReal = realCandles[String(chartTF)]?.length > 2;
@@ -1376,17 +1418,36 @@ async function apiPost(path,body,tok) {
 // ─── 1-CLICK ─────────────────────────────────────────────────────
 async function oneClickBuy() {
   if (!selInst || !curAsk) { log('OC','WRN','Нет цены'); return; }
+  ordSide='buy';
   const tok = await getToken(); if (!tok) return;
   const vol = quickVol || parseInt(el('ord-vol').value)||1;
-  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price:Math.round(curAsk),volume:vol,side:0},tok);
-  logOrdResp(r,'1-CLICK BUY'); loadOrders();
+  const price = Math.round(curAsk);
+  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price,volume:vol,side:0},tok);
+  logOrdResp(r,'1-CLICK BUY');
+  if (r.data) await attachTPSL(tok, price, 0, vol);
+  loadOrders();
 }
 async function oneClickSell() {
   if (!selInst || !curBid) { log('OC','WRN','Нет цены'); return; }
+  ordSide='sell';
   const tok = await getToken(); if (!tok) return;
   const vol = quickVol || parseInt(el('ord-vol').value)||1;
-  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price:Math.round(curBid),volume:vol,side:1},tok);
-  logOrdResp(r,'1-CLICK SELL'); loadOrders();
+  const price = Math.round(curBid);
+  const r = await apiPost('/Order',{email:USER,tradeAccount:getAcct(),securityId:selInst.id,price,volume:vol,side:1},tok);
+  logOrdResp(r,'1-CLICK SELL');
+  if (r.data) await attachTPSL(tok, price, 1, vol);
+  loadOrders();
+}
+
+async function attachTPSL(tok, entry, side, vol) {
+  if (!selInst) return;
+  const tpOn=el('tp-on').checked, slOn=el('sl-on').checked;
+  const tpV=parseFloat(el('tp-v').value)||0, slV=parseFloat(el('sl-v').value)||0;
+  const dir = side===0 ? 1 : -1;
+  const tpP = tpMode==='pct'?Math.round(entry*(1+dir*tpV/100)):tpMode==='pts'?Math.round(entry+dir*tpV):Math.round(tpV);
+  const slP = slMode==='pct'?Math.round(entry*(1-dir*slV/100)):slMode==='pts'?Math.round(entry-dir*slV):Math.round(slV);
+  if (tpOn && tpP>0) await placeSL(tok,getAcct(),selInst.id,tpP,vol,side===0?1:0,'TP');
+  if (slOn && slP>0) await placeSL(tok,getAcct(),selInst.id,slP,vol,side===0?1:0,'SL');
 }
 async function closePos() {
   if (!selInst) { log('CLOSE','WRN','Нет инструмента'); return; }
@@ -1906,6 +1967,57 @@ function clearLog() { el('ls').innerHTML=''; logN=0; setText('log-n',0); log('SY
 function toggleAS() { autoScroll=!autoScroll; el('bas').style.color=autoScroll?'var(--G)':'var(--Tm)'; }
 
 // ════════════════════════════════════════════════════════════════════
+// AI SUPERVISOR + EXECUTOR
+// ════════════════════════════════════════════════════════════════════
+function appendAILog(role, text) {
+  const box = el('ai-log'); if (!box) return;
+  const row = document.createElement('div'); row.className='ai-row';
+  row.innerHTML = `<div class="ai-role">${role}</div><div>${text}</div>`;
+  box.appendChild(row); box.scrollTop = box.scrollHeight;
+}
+function appendExecLog(role, text) {
+  const box = el('exec-log'); if (!box) return;
+  const row = document.createElement('div'); row.className='exec-row';
+  row.innerHTML = `<div class="exec-role">${role}</div><div>${text}</div>`;
+  box.appendChild(row); box.scrollTop = box.scrollHeight;
+}
+async function execArm(flag) {
+  executorArmed = flag;
+  setText('exec-status', `Executor: ${flag?'ARMED':'DISARMED'}`);
+  try {
+    await fetch('/api/executor/arm', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({armed:flag})});
+  } catch {}
+  appendExecLog('SYS', `Executor ${flag?'ARMED':'DISARMED'}`);
+}
+async function sendAIInstruction() {
+  const input = el('ai-msg');
+  const text = (input?.value||'').trim();
+  if (!text) return;
+  appendAILog('USER', text);
+  setText('ai-status', 'AI: thinking...');
+  if (input) input.value='';
+  try {
+    const r = await fetch('/api/ai/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:text, instrument:selInst?.ticker||null, account:getAcct()})});
+    const d = await r.json();
+    appendAILog('AI', d.reply || 'Нет ответа');
+    if (d.command) {
+      appendExecLog('AI', JSON.stringify(d.command));
+      if (executorArmed) {
+        const er = await fetch('/api/executor/command', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d.command)});
+        const ed = await er.json();
+        appendExecLog('BOT', ed.message || 'command executed');
+      } else {
+        appendExecLog('BOT', 'Команда получена, но executor DISARMED');
+      }
+    }
+    setText('ai-status', 'AI: ready');
+  } catch (e) {
+    appendAILog('AI', 'Ошибка: '+e.message);
+    setText('ai-status', 'AI: error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
 // HELPERS — без reflow-хаков, быстрые
 // ════════════════════════════════════════════════════════════════════
 function el(id) { return document.getElementById(id); }
@@ -1929,7 +2041,14 @@ function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 // ════════════════════════════════════════════════════════════════════
 // ПЕРИОДИЧЕСКИЕ ЗАДАЧИ
 // ════════════════════════════════════════════════════════════════════
-setInterval(() => { if (selInst) loadPricesBatch([selInst]); }, 5000);
+setInterval(() => { if (selInst) loadPricesBatch([selInst]); }, 3000);
+setInterval(() => {
+  if (!selInst) return;
+  if (Date.now() - quoteWatchdogTs > 4000) {
+    log('WATCHDOG','WRN','Задержка котировок: переподключение инструмента');
+    connectInstrumentHubs(selInst.id);
+  }
+}, 4000);
 setInterval(loadOrders, 15000);
 setInterval(loadFlaskStatus, 3000);
 setInterval(() => { genDemoCandles._cache=null; }, 60000); // обновляем демо каждую минуту
@@ -1940,6 +2059,8 @@ setInterval(() => { genDemoCandles._cache=null; }, 60000); // обновляем
 log('SYS','INF','CASSANDRA · HERMES v11 SCALPER PRO starting...');
 log('SYS','INF','API: ' + API);
 log('SYS','INF','Hotkeys: B=Buy S=Sell X=CancelAll C=Close ↑↓=Volume 1/2/5/0=Lot');
+appendAILog('SYS','Чат готов. Отправьте команду для AI-куратора.');
+appendExecLog('SYS','Executor готов. По умолчанию DISARMED.');
 loadAccounts();
 loadInst();
 recalc();

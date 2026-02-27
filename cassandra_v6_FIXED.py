@@ -1436,6 +1436,167 @@ tester: Optional[CassandraRealOrderTester] = None
 tester_thread: Optional[threading.Thread] = None
 
 
+EXECUTOR_STATE = {
+    'armed': False,
+    'logs': []
+}
+
+
+def _exec_log(level: str, message: str):
+    item = {
+        'timestamp': datetime.now().isoformat(),
+        'level': level,
+        'message': message,
+    }
+    EXECUTOR_STATE['logs'].append(item)
+    if len(EXECUTOR_STATE['logs']) > 300:
+        EXECUTOR_STATE['logs'] = EXECUTOR_STATE['logs'][-300:]
+    try:
+        socketio.emit('executor_log', item)
+    except Exception:
+        pass
+
+
+class CassandraExecutorClient:
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({"Accept": "application/json", "Content-Type": "application/json"})
+        self.token: Optional[str] = None
+
+    def auth(self) -> str:
+        if self.token:
+            return self.token
+        r = self.session.post(f"{BASE_URL}/api/Authentication/login", json={"email": USERNAME, "password": PASSWORD}, timeout=TIMEOUT)
+        r.raise_for_status()
+        d = r.json()
+        self.token = d.get('accessToken')
+        if not self.token:
+            raise RuntimeError('No accessToken from Cassandra API')
+        return self.token
+
+    def _headers(self):
+        return {"Authorization": f"Bearer {self.auth()}", "Content-Type": "application/json", "Accept": "application/json"}
+
+    def place_order(self, account: str, security_id: str, side: int, volume: int, price: int):
+        payload = {
+            "email": USERNAME,
+            "tradeAccount": account,
+            "securityId": security_id,
+            "price": int(price),
+            "volume": int(volume),
+            "side": int(side),
+        }
+        r = self.session.post(f"{BASE_URL}/Order", json=payload, headers=self._headers(), timeout=TIMEOUT)
+        return r.status_code, r.json() if r.content else {}
+
+    def place_stop_limit(self, account: str, security_id: str, side: int, volume: int, stop_price: int, order_price: int):
+        payload = {
+            "tradeAccount": account,
+            "securityId": security_id,
+            "stopPrice": int(stop_price),
+            "price": int(order_price),
+            "volume": int(volume),
+            "side": int(side),
+            "condition": 6,
+            "isMarket": True,
+            "protectingSeconds": 0,
+            "byMarket": True,
+            "comment": "AI_EXECUTOR"
+        }
+        r = self.session.post(f"{BASE_URL}/ConditionalOrder/StopLimit", json=payload, headers=self._headers(), timeout=TIMEOUT)
+        return r.status_code, r.json() if r.content else {}
+
+
+    def resolve_security_id(self, ticker: str, board: int = 1) -> Optional[str]:
+        try:
+            r = self.session.get(f"{BASE_URL}/Security/{board}?pageNumber=1&pageSize=120&favorite=0", headers=self._headers(), timeout=TIMEOUT)
+            if not r.ok:
+                return None
+            body = r.json()
+            items = body if isinstance(body, list) else body.get('data') or body.get('items') or []
+            target = (ticker or '').upper().strip()
+            for it in items:
+                t = str(it.get('shortName') or it.get('isin') or '').upper().strip()
+                if t == target:
+                    return str(it.get('securityId') or it.get('id') or '')
+            return None
+        except Exception:
+            return None
+
+
+EXECUTOR_CLIENT = CassandraExecutorClient()
+
+
+def _parse_ai_command(message: str, instrument: str = "SBER") -> Dict[str, Any]:
+    import re
+
+    text = (message or "").strip()
+    t = text.upper()
+    cmd: Dict[str, Any] = {
+        "action": "HOLD",
+        "ticker": instrument or "SBER",
+        "order_type": "market",
+        "side": "buy",
+        "volume": 1,
+        "tp_percent": 0.0,
+        "sl_percent": 0.0,
+        "account": "",
+        "security_id": "",
+    }
+
+    if "SELL" in t or "ШОРТ" in t:
+        cmd["action"] = "OPEN"
+        cmd["side"] = "sell"
+    elif "BUY" in t or "ЛОНГ" in t:
+        cmd["action"] = "OPEN"
+        cmd["side"] = "buy"
+
+    vm = re.search(r"(?:VOLUME|VOL|ОБЪ[ЕЁ]М)\s*[:=]?\s*(\d+)", t)
+    if vm:
+        cmd["volume"] = max(1, int(vm.group(1)))
+
+    tpm = re.search(r"TP\s*[:=]?\s*(\d+(?:[\.,]\d+)?)\s*%", t)
+    slm = re.search(r"SL\s*[:=]?\s*(\d+(?:[\.,]\d+)?)\s*%", t)
+    if tpm:
+        cmd["tp_percent"] = float(tpm.group(1).replace(',', '.'))
+    if slm:
+        cmd["sl_percent"] = float(slm.group(1).replace(',', '.'))
+
+    tm = re.search(r"(?:TICKER|ИНСТРУМЕНТ|СИМВОЛ)\s*[:=]?\s*([A-Z0-9]+)", t)
+    if tm:
+        cmd["ticker"] = tm.group(1)
+
+    return cmd
+
+
+def _call_openrouter(message: str) -> str:
+    api_key = os.environ.get('OPENROUTER_API_KEY', '').strip()
+    if not api_key:
+        return "OPENROUTER_API_KEY не задан. Использую локальный парсер команд."
+
+    try:
+        payload = {
+            "model": "deepseek/deepseek-chat-v3-0324:free",
+            "messages": [
+                {"role": "system", "content": "Ты AI-куратор скальпинг-робота Cassandra. Отвечай кратко и формируй торговую команду."},
+                {"role": "user", "content": message},
+            ],
+        }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://localhost",
+            "X-Title": "cassandra-dashboard",
+        }
+        r = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=20)
+        if not r.ok:
+            return f"OpenRouter error HTTP {r.status_code}. Использую локальный парсер команд."
+        d = r.json()
+        return d.get('choices', [{}])[0].get('message', {}).get('content', '') or 'AI ответ пустой.'
+    except Exception as e:
+        return f"OpenRouter exception: {e}. Использую локальный парсер команд."
+
+
 def update_callback(event_type: str, data: Dict):
     """Callback для WebSocket обновлений"""
     try:
@@ -1502,6 +1663,88 @@ def config_handler():
 
     return jsonify({"status": "updated", "config": request.json})
 
+
+
+
+@app.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    payload = request.json or {}
+    msg = str(payload.get('message', '')).strip()
+    instrument = str(payload.get('instrument') or 'SBER')
+
+    if not msg:
+        return jsonify({'error': 'message is required'}), 400
+
+    ai_reply = _call_openrouter(msg)
+    command = _parse_ai_command(msg, instrument=instrument)
+    _exec_log('AI', f"Instruction: {msg}")
+    _exec_log('AI', f"Command: {command}")
+
+    return jsonify({'reply': ai_reply, 'command': command})
+
+
+@app.route('/api/executor/arm', methods=['POST'])
+def executor_arm():
+    payload = request.json or {}
+    EXECUTOR_STATE['armed'] = bool(payload.get('armed', False))
+    _exec_log('SYS', f"Executor armed={EXECUTOR_STATE['armed']}")
+    return jsonify({'armed': EXECUTOR_STATE['armed']})
+
+
+@app.route('/api/executor/logs', methods=['GET'])
+def executor_logs():
+    return jsonify({'armed': EXECUTOR_STATE['armed'], 'logs': EXECUTOR_STATE['logs'][-100:]})
+
+
+@app.route('/api/executor/command', methods=['POST'])
+def executor_command():
+    if not EXECUTOR_STATE['armed']:
+        return jsonify({'ok': False, 'message': 'Executor is DISARMED'}), 400
+
+    cmd = request.json or {}
+    action = str(cmd.get('action', 'HOLD')).upper()
+    if action != 'OPEN':
+        _exec_log('BOT', f"Skip action={action}")
+        return jsonify({'ok': True, 'message': f'action {action} skipped'})
+
+    account = (cmd.get('account') or (tester.trade_account if tester else ''))
+    security_id = (cmd.get('security_id') or (tester.trade.security_id if tester else ''))
+    if not security_id:
+        security_id = EXECUTOR_CLIENT.resolve_security_id(str(cmd.get('ticker') or 'SBER')) or ''
+    side = 0 if str(cmd.get('side', 'buy')).lower() == 'buy' else 1
+    volume = int(cmd.get('volume', 1))
+
+    if not account or not security_id:
+        return jsonify({'ok': False, 'message': 'account/security_id required'}), 400
+
+    try:
+        snap = tester.get_best_prices() if tester else None
+        ref_price = (snap.best_ask if side == 0 else snap.best_bid) if snap else 0
+        if ref_price <= 0:
+            ref_price = float(cmd.get('price') or 0)
+        if ref_price <= 0:
+            return jsonify({'ok': False, 'message': 'No reference price'}), 400
+
+        entry = int(round(ref_price))
+        code, data = EXECUTOR_CLIENT.place_order(account, security_id, side, volume, entry)
+        _exec_log('BOT', f"Order sent side={side} vol={volume} price={entry} http={code}")
+
+        tp_percent = float(cmd.get('tp_percent', 0) or 0)
+        sl_percent = float(cmd.get('sl_percent', 0) or 0)
+        reverse_side = 1 if side == 0 else 0
+        if tp_percent > 0:
+            tp_price = int(round(entry * (1 + (tp_percent / 100.0) * (1 if side == 0 else -1))))
+            EXECUTOR_CLIENT.place_stop_limit(account, security_id, reverse_side, volume, tp_price, tp_price)
+            _exec_log('BOT', f"TP placed @{tp_price}")
+        if sl_percent > 0:
+            sl_price = int(round(entry * (1 - (sl_percent / 100.0) * (1 if side == 0 else -1))))
+            EXECUTOR_CLIENT.place_stop_limit(account, security_id, reverse_side, volume, sl_price, sl_price)
+            _exec_log('BOT', f"SL placed @{sl_price}")
+
+        return jsonify({'ok': True, 'message': 'Executor command applied', 'response': data})
+    except Exception as e:
+        _exec_log('ERR', str(e))
+        return jsonify({'ok': False, 'message': str(e)}), 500
 
 @socketio.on('connect')
 def handle_connect():
