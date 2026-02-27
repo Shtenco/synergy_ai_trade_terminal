@@ -749,6 +749,7 @@ let rtHist = [0, 0, 0];
 let accts = [];
 let tradeRunning = false;
 let sigConns = {};
+let activeInstrumentHubPaths = [];
 let quickVol = 1;
 let domData = {asks:[], bids:[]};  // стакан
 let cumulativeDelta = 0;           // накопленная дельта
@@ -905,12 +906,26 @@ async function connectSignalR() {
 // ════════════════════════════════════════════════════════════════════
 let quoteTimer = null;
 
+async function stopInstrumentStreams() {
+  if (quoteTimer) { clearInterval(quoteTimer); quoteTimer = null; }
+  for (const path of activeInstrumentHubPaths) {
+    const conn = sigConns[path];
+    if (!conn) continue;
+    try { await conn.stop(); } catch {}
+    delete sigConns[path];
+  }
+  activeInstrumentHubPaths = [];
+}
+
 async function connectInstrumentHubs(secId) {
+  await stopInstrumentStreams();
+
   const tok = await getToken();
   if (!tok) return;
 
   // TICK HUB — все тики потоком
   const tickPath = `tick?securityId=${secId}`;
+  activeInstrumentHubPaths.push(tickPath);
   await hub(tickPath, tok, 'Tick', ticks => {
     let arr = Array.isArray(ticks) ? ticks : [ticks];
     if (arr.length && Array.isArray(arr[0])) arr = arr[0];
@@ -938,6 +953,7 @@ async function connectInstrumentHubs(secId) {
 
   // CLUSTER HUB — готовые OHLCV свечи
   const clPath = `cluster?securityId=${secId}`;
+  activeInstrumentHubPaths.push(clPath);
   const clConn = await hub(clPath, tok, 'Cluster', data => {
     let arr = Array.isArray(data) ? data : [data];
     if (arr.length && Array.isArray(arr[0])) arr = arr[0];
@@ -1156,6 +1172,16 @@ async function loadInst() {
     log('INST','OK',`Загружено: ${allInst.length} инструментов`);
     // Загружаем цены пачками (3 параллельно)
     loadPricesBatch(allInst.slice(0, 30));
+
+    if (!selInst || !allInst.some(i => i.id === selInst.id)) {
+      if (allInst.length) await selectI(allInst[0].id);
+      else {
+        selInst = null;
+        setText('mk-bid','—');
+        setText('mk-ask','—');
+        setText('mk-last','—');
+      }
+    }
   } catch(e) { log('INST','ERR', e.message); el('ilist').innerHTML=`<div class="note">Ошибка: ${e.message}</div>`; }
 }
 
