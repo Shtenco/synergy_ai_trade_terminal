@@ -1,0 +1,15 @@
+{
+  "data_dir": "ai_training_data",
+  "log_dir": "logs",
+  "api_port": 5000,
+  "data_poll_interval": 0.5,
+  "max_processes": 4,
+  "debug": false,
+  "tickers": ["SBER", "GAZP", "LKOH", "YNDX", "ROSN"],
+  "trade_config": {
+    "ticker": "SBER",
+    "tp_percent": 0.5,
+    "sl_percent": 0.5,
+    "volume": 1
+  }
+}
