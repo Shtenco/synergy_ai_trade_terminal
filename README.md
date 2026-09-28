@@ -153,3 +153,34 @@ MIT License
 - 1-click BUY/SELL теперь исполняет вход и автоматически ставит TP/SL из текущих настроек.
 - Добавлен watchdog котировок с авто-переподключением инструментальных хабов при задержке потока.
 - Для OpenRouter/DeepSeek добавлен модуль `cassandra_deepseek_supervisor.py` и legacy-вход `запуск дипсика.py`.
+
+
+<!-- SYNERGY-FEDERATION-PASSPORT:START -->
+---
+
+## 🧭 SYNERGY federation passport
+
+**Домен:** 📈 Trading terminal / control plane  
+**Архитектурный родитель:** [`synergy_midas_ai`](https://github.com/Shtenco/synergy_midas_ai)  
+**Архитектурный корень:** [`synergy_system`](https://github.com/Shtenco/synergy_system)
+
+```mermaid
+flowchart LR
+    SYS[🧭 synergy_system] --> P[synergy_midas_ai]
+    P --> THIS[synergy_ai_trade_terminal]
+    THIS --> E[📦 Evidence / outputs]
+```
+
+Эта диаграмма фиксирует место в документационной федерации. Реальная code/runtime dependency должна подтверждаться отдельными артефактами.
+
+### Навигация
+
+- [📚 Атлас всех 75 репозиториев](https://github.com/Shtenco/synergy_system/blob/main/docs/SYNERGY_REPOSITORY_ATLAS.md)
+- [🧾 Машиночитаемый registry](https://github.com/Shtenco/synergy_system/blob/main/registry/SYNERGY_REPOSITORIES.json)
+- [🧭 SYNERGY SYSTEM](https://github.com/Shtenco/synergy_system)
+
+### Evidence rule
+
+`GREEN` присваивается только воспроизводимым утверждениям. Исследовательский код, диаграмма или заявленная метрика без проверяемого artifact trail остаются `R&D/CANDIDATE`.
+
+<!-- SYNERGY-FEDERATION-PASSPORT:END -->
