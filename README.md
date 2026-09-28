@@ -184,3 +184,41 @@ flowchart LR
 `GREEN` присваивается только воспроизводимым утверждениям. Исследовательский код, диаграмма или заявленная метрика без проверяемого artifact trail остаются `R&D/CANDIDATE`.
 
 <!-- SYNERGY-FEDERATION-PASSPORT:END -->
+
+---
+
+# 🖥️ Глубокий технический паспорт Cassandra Terminal
+
+## Фактический `main`
+
+```text
+MAIN.py
+cassandra_ai_collector.py
+cassandra_v6_FIXED.py
+cassandra_deepseek_supervisor.py
+WALK_FORWARD_2_YEARS.py
+dashboard.html
+config.json
+```
+
+Это реальный legacy supervisor/terminal stack, но без отдельной automated test suite.
+
+```mermaid
+flowchart LR
+    MAIN[MAIN.py supervisor] --> COL[Data collector]
+    MAIN --> API[TradeTester/API]
+    API --> DASH[Dashboard/WebSocket]
+    SUP[AI supervisor] --> MAIN
+```
+
+## Основные риски
+
+- process restart ≠ state consistency;
+- AI supervisor must not gain execution authority;
+- dashboard command ≠ authorized trade;
+- absence of tests makes refactoring/migration risky;
+- config/log/data paths need schema/versioning.
+
+## Следующий рубеж
+
+freeze legacy behavior → add smoke/integration tests → extract typed DataHub/execution contracts → migrate useful components into MIDAS/TradeMux/Meta-OS.
