@@ -1,264 +1,40 @@
 <div align="center">
 
-<img src="assets/readme/hero.svg" alt="CASSANDRA TRADING TERMINAL vector hero" width="100%"/>
+<img src="assets/readme/hero.svg" width="100%" alt="CASSANDRA / RESEARCH OPERATIONS engineering overview"/>
 
-**Trading research supervisor, data collector and dashboard**
-
-[Overview](#verified-overview) · [Architecture](#architecture-map) · [Evidence](#evidence-boundary) · [Documentation](#original-technical-documentation)
+**Process supervision; Lite-Invest market collector; order book features; Flask/SocketIO dashboard**
 
 </div>
 
-## Verified overview
+# CASSANDRA / RESEARCH OPERATIONS
 
-Trading research supervisor, data collector and dashboard. Main repository entry: `MAIN.py`. This page presents a research or engineering codebase and does not imply verified production deployment.
+## Original research direction
 
-## Architecture map
+MAIN.py implements Config, ManagedComponent and SystemManager using multiprocessing, status monitoring and shutdown. Collector includes Tick/Candle/Cluster/OrderBook dataclasses, CandleBuilder, FeatureEngineer, OrderBookProcessor, LabelGenerator and CSV/Parquet/NPZ/JSONL exports. The order tester implements price conversion, state transitions, broker requests, stop-limit management and Flask/SocketIO events.
 
-```mermaid
-flowchart LR
-A[Source and configuration] --> B[Implemented project modules]
-B --> C[Output or presentation]
-C --> D[Independent validation and review]
-```
+## Implemented engineering and algorithmic value
 
-The diagram represents conceptual flow; it does not assert a live deployment.
+The repository currently contains credentials embedded in Python source; revoke and replace these before any public deployment. The source may place real orders, so descriptive analysis is not permission to execute them.
 
-## Evidence boundary
+## Scientific and mathematical interpretation
 
-> Execution-related controls require independently tested risk controls and authenticated interfaces.
+Separate read-only data collector and explicitly authorized order executor; add authenticated event streaming, credential hygiene, demo fixtures, end-to-end tests and immutable trade reports.
 
-| Domain | Interpretation |
-|:--|:--|
-| Repository files | Inspectable implementation artifacts |
-| Test and CI results | Require separate current run evidence |
-| Performance metrics | Require timestamped and reproducible evaluation |
-| Production claims | Not established solely by documentation |
+## Research and application opportunities
 
-## Original technical documentation
+undefined
 
----
+## Evidence context and development maturity
 
-# Cassandra System Manager
+For each price level l, order-book imbalance may be represented as I_l=(B_l-A_l)/(B_l+A_l) when depth is positive. This is a recommended derived feature, not evidence that every exported field uses this exact formula. Tick cumulative delta is signed buy volume minus sell volume.
 
-Единая точка запуска всей системы Cassandra.
+## Source navigation
 
-## Быстрый запуск
+- [`MAIN.py`](MAIN.py)
+- [`cassandra_ai_collector.py`](cassandra_ai_collector.py)
+- [`cassandra_v6_FIXED.py`](cassandra_v6_FIXED.py)
+- [`dashboard.html`](dashboard.html)
 
-```bash
-python MAIN.py
-```
+## Publication protocol
 
-## Архитектура системы
-
-```
-MAIN.py (process supervisor v2)
-├── Config loader (config.json + defaults)
-├── DataCollector process (cassandra_ai_collector.py)
-├── TradeTester process (cassandra_v6_FIXED.py API server)
-└── Auto-restart monitor + graceful shutdown
-```
-
-## Компоненты
-
-### DataCollector
-- Сбор данных для AI тренировки
-- Поддержка нескольких тикеров
-- Оптимизированный сбор
-
-### TradeTester
-- Торговый тестер
-- Управление позициями
-- Автоматический мониторинг
-
-### DataHub
-- Обмен данными между процессами
-- Кэширование
-- WebSocket обновления
-
-## Конфигурация
-
-Файл: `config.json`
-
-Ключевые параметры:
-- `data_dir` - директория для данных
-- `log_dir` - директория для логов
-- `api_port` - порт API
-- `tickers` - список тикеров для сбора
-- `trade_config` - настройки торговли
-
-## Управление
-
-### Запуск
-```bash
-# Стандартный запуск
-python MAIN.py
-
-# С отладкой
-python MAIN.py --debug
-```
-
-### Остановка
-- Ctrl+C - корректная остановка
-- SIGTERM - сигнал остановки
-
-### Перезапуск
-```bash
-# Через интерфейс
-python MAIN.py --restart
-
-# Через сигнал
-kill -SIGUSR1 <PID>
-```
-
-## Мониторинг
-
-### Логи
-- Консольный вывод
-- Файловые логи в `logs/`
-
-### Статус
-```bash
-# Проверка статуса
-python MAIN.py --status
-
-# Просмотр логов
-tail -f logs/system_*.log
-```
-
-## Интеграция с дашбордом
-
-Дашборд автоматически подключается к DataHub через WebSocket.
-
-### Доступные данные
-- OHLC данные
-- Стакан цен
-- Объемы торгов
-- Статистика торговли
-
-## Производительность
-
-Система оптимизирована для:
-- Максимальной скорости сбора данных
-- Эффективного использования ресурсов
-- Автоматического масштабирования
-
-## Ошибки и восстановление
-
-### Автоматическое восстановление
-- Перезапуск сбойных процессов
-- Проверка целостности данных
-- Восстановление соединений
-
-### Ручное управление
-```bash
-# Перезапуск конкретного компонента
-python MAIN.py --restart collector
-
-# Полная перезагрузка
-python MAIN.py --restart all
-```
-
-## Разработка
-
-### Требования
-- Python 3.8+
-- Библиотеки: requests, flask, numpy, pandas
-
-### Структура проекта
-```
-cassandra/
-├── MAIN.py          # центральный менеджер
-├── config.json      # конфигурация
-├── README.md        # документация
-├── logs/           # директория логов
-├── ai_training_data/ # данные для AI
-└── dashboard.html   # веб-интерфейс
-```
-
-## Лицензия
-
-MIT License
-
-## Что улучшено в архитектуре (v2)
-
-- `MAIN.py` теперь выступает как supervisor: поднимает компоненты в отдельных процессах, следит за их состоянием и перезапускает при падении.
-- Конфиг централизован в dataclass `Config` с загрузкой из `config.json`.
-- Единый logger создаёт консольный и файловый канал для всех компонентов.
-- Добавлена безопасная остановка (`terminate` → `kill`) для исключения зависших процессов.
-
-
-## Dashboard v11+ (AI Supervisor + Executor)
-
-- Добавлены панели **AI-чат Supervisor** и **Робот-исполнитель + логи** над блоком 1-click.
-- 1-click BUY/SELL теперь исполняет вход и автоматически ставит TP/SL из текущих настроек.
-- Добавлен watchdog котировок с авто-переподключением инструментальных хабов при задержке потока.
-- Для OpenRouter/DeepSeek добавлен модуль `cassandra_deepseek_supervisor.py` и legacy-вход `запуск дипсика.py`.
-
-
-<!-- SYNERGY-FEDERATION-PASSPORT:START -->
----
-
-##  SYNERGY federation passport
-
-**Домен:**  Trading terminal / control plane  
-**Архитектурный родитель:** [`synergy_midas_ai`](https://github.com/Shtenco/synergy_midas_ai)  
-**Архитектурный корень:** [`synergy_system`](https://github.com/Shtenco/synergy_system)
-
-```mermaid
-flowchart LR
-    SYS[ synergy_system] --> P[synergy_midas_ai]
-    P --> THIS[synergy_ai_trade_terminal]
-    THIS --> E[ Evidence / outputs]
-```
-
-Эта диаграмма фиксирует место в документационной федерации. Реальная code/runtime dependency должна подтверждаться отдельными артефактами.
-
-### Навигация
-
-- [ Атлас всех 75 репозиториев](https://github.com/Shtenco/synergy_system/blob/main/docs/SYNERGY_REPOSITORY_ATLAS.md)
-- [ Машиночитаемый registry](https://github.com/Shtenco/synergy_system/blob/main/registry/SYNERGY_REPOSITORIES.json)
-- [ SYNERGY SYSTEM](https://github.com/Shtenco/synergy_system)
-
-### Evidence rule
-
-`GREEN` присваивается только воспроизводимым утверждениям. Исследовательский код, диаграмма или заявленная метрика без проверяемого artifact trail остаются `R&D/CANDIDATE`.
-
-<!-- SYNERGY-FEDERATION-PASSPORT:END -->
-
----
-
-#  Глубокий технический паспорт Cassandra Terminal
-
-## Фактический `main`
-
-```text
-MAIN.py
-cassandra_ai_collector.py
-cassandra_v6_FIXED.py
-cassandra_deepseek_supervisor.py
-WALK_FORWARD_2_YEARS.py
-dashboard.html
-config.json
-```
-
-Это реальный legacy supervisor/terminal stack, но без отдельной automated test suite.
-
-```mermaid
-flowchart LR
-    MAIN[MAIN.py supervisor] --> COL[Data collector]
-    MAIN --> API[TradeTester/API]
-    API --> DASH[Dashboard/WebSocket]
-    SUP[AI supervisor] --> MAIN
-```
-
-## Основные риски
-
-- process restart ≠ state consistency;
-- AI supervisor must not gain execution authority;
-- dashboard command ≠ authorized trade;
-- absence of tests makes refactoring/migration risky;
-- config/log/data paths need schema/versioning.
-
-## Следующий рубеж
-
-freeze legacy behavior → add smoke/integration tests → extract typed DataHub/execution contracts → migrate useful components into MIDAS/TradeMux/Meta-OS.
+Claims must refer to the exact current source commit or an identified experiment artifact. Source code establishes implementation; experiments require frozen inputs, complete costs, successful repeated checks and a labelled evaluation regime. Financial values are attributed to their measurement environment. This page is a scientifically grounded overview and is not an offer of investment returns.
