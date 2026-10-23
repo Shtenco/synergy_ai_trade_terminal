@@ -1,3 +1,43 @@
+<div align="center">
+
+<img src="assets/readme/hero.svg" alt="CASSANDRA TRADING TERMINAL vector hero" width="100%"/>
+
+**Trading research supervisor, data collector and dashboard**
+
+[Overview](#verified-overview) · [Architecture](#architecture-map) · [Evidence](#evidence-boundary) · [Documentation](#original-technical-documentation)
+
+</div>
+
+## Verified overview
+
+Trading research supervisor, data collector and dashboard. Main repository entry: `MAIN.py`. This page presents a research or engineering codebase and does not imply verified production deployment.
+
+## Architecture map
+
+```mermaid
+flowchart LR
+A[Source and configuration] --> B[Implemented project modules]
+B --> C[Output or presentation]
+C --> D[Independent validation and review]
+```
+
+The diagram represents conceptual flow; it does not assert a live deployment.
+
+## Evidence boundary
+
+> Execution-related controls require independently tested risk controls and authenticated interfaces.
+
+| Domain | Interpretation |
+|:--|:--|
+| Repository files | Inspectable implementation artifacts |
+| Test and CI results | Require separate current run evidence |
+| Performance metrics | Require timestamped and reproducible evaluation |
+| Production claims | Not established solely by documentation |
+
+## Original technical documentation
+
+---
+
 # Cassandra System Manager
 
 Единая точка запуска всей системы Cassandra.
